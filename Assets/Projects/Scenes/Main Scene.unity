@@ -149,7 +149,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1994685483}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &112369
 MonoBehaviour:
@@ -234,7 +234,10 @@ MonoBehaviour:
       z: 1
     cylinderRadius: 0.4
     cylinderHeight: 0.6
+    fingerRadius: 0.15
+    fingerStrength: 0.005
   clayRenderer: {fileID: 585568489}
+  hands: []
 --- !u!114 &585568489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -673,6 +676,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 112368}
   - {fileID: 1552315388}
   - {fileID: 1197006842}
   m_Father: {fileID: 0}
@@ -930,5 +934,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 1140566332}
   - {fileID: 585568487}
-  - {fileID: 112368}
   - {fileID: 1994685483}
