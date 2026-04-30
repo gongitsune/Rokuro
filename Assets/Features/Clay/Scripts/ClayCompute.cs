@@ -58,6 +58,8 @@ namespace Features.Clay.Scripts
 
         public void OnDrawGizmos(in float3 origin)
         {
+            if (_fingerPositions == null) return;
+
             Gizmos.color = Color.green;
             foreach (var pos in _fingerPositions)
             {

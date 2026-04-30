@@ -546,6 +546,9 @@ MonoBehaviour:
     cylinderHeight: 0.6
     fingerRadius: 0.15
     fingerStrength: 0.005
+  reconstructorDesc:
+    computeShader: {fileID: 7200000, guid: 4e2473b8b14e4c64ac8551a669f53358, type: 3}
+    periodFrame: 5
   clayRenderer: {fileID: 1395029810}
   hands:
   - {fileID: 586472419}
