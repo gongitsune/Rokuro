@@ -1,4 +1,7 @@
 #pragma kernel init_cylinder_sdf
+#pragma kernel deform_sdf
+
+#define MAX_FINGERS 2
 
 RWTexture3D<half> sdf_texture;
 
@@ -9,6 +12,9 @@ cbuffer Params
     float3 bounds_max; // ワールド空間の最大座標
     float cylinder_radius;
     float cylinder_height; // 中心から上下への半値 (half-height)
+    float4 finger_positions[MAX_FINGERS];
+    float finger_radius;
+    float finger_strength;
 }
 
 // 無限円柱のSDF（Y軸中心）
@@ -31,4 +37,28 @@ void init_cylinder_sdf(uint3 id : SV_DispatchThreadID)
     float dist = sd_cylinder(p, cylinder_radius, cylinder_height);
 
     sdf_texture[id] = dist;
+}
+
+[numthreads(8, 8, 8)]
+void deform_sdf(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)resolution)) return;
+
+    float3 uvw = (float3(id) + 0.5) / float3(resolution);
+    float3 p = lerp(bounds_min, bounds_max, uvw);
+    float2 p_ry = float2(length(p.xz), p.y);
+
+    // 全ての指の影響を計算
+    float total_influence = 0.0;
+    for (int i = 0; i < MAX_FINGERS; i++)
+    {
+        float2 finger_ry = float2(length(finger_positions[i].xz), finger_positions[i].y);
+        float dist = length(p_ry - finger_ry);
+        if (dist < finger_radius)
+            total_influence += smoothstep(1.0, 0.0, dist / finger_radius);
+    }
+
+    if (total_influence <= 0.0) return;
+
+    sdf_texture[id] += clamp(total_influence, 0.0, 1.0) * finger_strength;
 }

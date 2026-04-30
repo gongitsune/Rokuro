@@ -73,6 +73,11 @@ namespace Features.Utils.Scripts
             _shader.SetVector(_uniformMap[uniform], vector);
         }
 
+        public void SetVectorArray(TUniform uniform, in Vector4[] vectors)
+        {
+            _shader.SetVectorArray(_uniformMap[uniform], vectors);
+        }
+
         public void SetInt(TUniform uniform, int value)
         {
             _shader.SetInt(_uniformMap[uniform], value);

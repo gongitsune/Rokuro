@@ -18,6 +18,11 @@ namespace Features.Clay.Scripts
             clayRenderer.Initialize(this);
         }
 
+        private void Update()
+        {
+            clayRenderer.Tick();
+        }
+
         private void OnDestroy()
         {
             _clayCompute.Dispose();

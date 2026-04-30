@@ -26,8 +26,22 @@ namespace Features.Clay.Scripts
             var desc = clayManager.ClayComputeDesc;
             _material.SetTexture(Uniforms._sdf_tex, clayManager.SDFTexture);
             _material.SetInt(Uniforms.resolution, desc.resolution);
-            _material.SetVector(Uniforms.bounds_min, new float4(desc.boundsMin, 0));
-            _material.SetVector(Uniforms.bounds_max, new float4(desc.boundsMax, 0));
+            UpdateBounds();
+        }
+
+        public void Tick()
+        {
+            UpdateBounds();
+        }
+
+        private void UpdateBounds()
+        {
+            var pos = transform.position;
+            var desc = _clayManager.ClayComputeDesc;
+            var boundsMin = desc.boundsMin + new float3(pos);
+            var boundsMax = desc.boundsMax + new float3(pos);
+            _material.SetVector(Uniforms.bounds_min, new float4(boundsMin, 0));
+            _material.SetVector(Uniforms.bounds_max, new float4(boundsMax, 0));
         }
 
         private Mesh CreateBoundingCube()

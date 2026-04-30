@@ -39,8 +39,15 @@ namespace Features.Clay.Scripts
             _computeShader.SetVector(Uniform.bounds_max, new float4(desc.boundsMax, 0));
             _computeShader.SetFloat(Uniform.cylinder_radius, desc.cylinderRadius);
             _computeShader.SetFloat(Uniform.cylinder_height, desc.cylinderHeight);
+            _computeShader.SetFloat(Uniform.finger_radius, desc.fingerRadius);
+            _computeShader.SetFloat(Uniform.finger_strength, desc.fingerStrength);
 
             _computeShader.Dispatch(Kernel.init_cylinder_sdf, new uint3(resolution));
+        }
+
+        public void UpdateFingerPositions(Vector4[] positions)
+        {
+            _computeShader.SetVectorArray(Uniform.finger_positions, positions);
         }
 
         [Serializable]
@@ -51,12 +58,15 @@ namespace Features.Clay.Scripts
             public float3 boundsMin = new(-1, -1, -1), boundsMax = new(1, 1, 1);
             public float cylinderRadius = 0.4f;
             public float cylinderHeight = 0.6f;
+            public float fingerRadius = 0.15f;
+            public float fingerStrength = 0.005f;
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         private enum Kernel
         {
-            init_cylinder_sdf
+            init_cylinder_sdf,
+            deform_sdf
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -67,7 +77,10 @@ namespace Features.Clay.Scripts
             bounds_min,
             bounds_max,
             cylinder_radius,
-            cylinder_height
+            cylinder_height,
+            finger_positions,
+            finger_radius,
+            finger_strength
         }
     }
 }
