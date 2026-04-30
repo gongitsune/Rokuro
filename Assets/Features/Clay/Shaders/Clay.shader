@@ -104,7 +104,7 @@ Shader "Custom/Clay"
                 // Sphere Marching
                 for (int i = 0; i < max_steps; i++)
                 {
-                    float surf_dist = max(0.002, step_size * 0.5);
+                    float surf_dist = max(0.005, step_size * 0.5);
                     float3 p = ro + rd * t;
                     float d = sample_sdf(p);
 

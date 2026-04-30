@@ -11,7 +11,6 @@ namespace Features.Clay.Scripts
 
         private ClayCompute _clayCompute;
         private Vector4[] _handsPositions;
-        private SDFReinitJobSystem _reinit;
 
         public RenderTexture SDFTexture => _clayCompute.SDFTexture;
         public ClayCompute.Desc ClayComputeDesc => clayComputeDesc;
@@ -19,11 +18,9 @@ namespace Features.Clay.Scripts
         private void Start()
         {
             _clayCompute = new ClayCompute();
-            _reinit = new SDFReinitJobSystem();
 
             _clayCompute.Initialize(clayComputeDesc);
             clayRenderer.Initialize(this);
-            _reinit.Initialize(_clayCompute, clayComputeDesc);
 
             _handsPositions = new Vector4[2];
         }
@@ -39,13 +36,11 @@ namespace Features.Clay.Scripts
             _clayCompute.UpdateFingerPositions(_handsPositions);
             _clayCompute.Tick();
             clayRenderer.Tick();
-            _reinit.Tick();
         }
 
         private void OnDestroy()
         {
             _clayCompute.Dispose();
-            _reinit.Dispose();
         }
 
 #if UNITY_EDITOR
