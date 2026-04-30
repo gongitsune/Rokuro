@@ -46,19 +46,18 @@ void deform_sdf(uint3 id : SV_DispatchThreadID)
 
     float3 uvw = (float3(id) + 0.5) / float3(resolution);
     float3 p = lerp(bounds_min, bounds_max, uvw);
-    float2 p_ry = float2(length(p.xz), p.y);
 
-    // 全ての指の影響を計算
-    float total_influence = 0.0;
+    float totalInfluence = 0.0;
+
     for (int i = 0; i < MAX_FINGERS; i++)
     {
-        float2 finger_ry = float2(length(finger_positions[i].xz), finger_positions[i].y);
-        float dist = length(p_ry - finger_ry);
+        // XZ平面の2D距離 → 3D距離に変更
+        float dist = length(p - finger_positions[i].xyz);
         if (dist < finger_radius)
-            total_influence += smoothstep(1.0, 0.0, dist / finger_radius);
+            totalInfluence += smoothstep(1.0, 0.0, dist / finger_radius);
     }
 
-    if (total_influence <= 0.0) return;
+    if (totalInfluence <= 0.0) return;
 
-    sdf_texture[id] += clamp(total_influence, 0.0, 1.0) * finger_strength;
+    sdf_texture[id] += clamp(totalInfluence, 0.0, 1.0) * finger_strength;
 }

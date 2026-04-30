@@ -10,6 +10,8 @@ namespace Features.Clay.Scripts
     public class ClayCompute : IDisposable
     {
         private ComputeShaderWrapper<Kernel, Uniform> _computeShader;
+        private Desc _desc;
+        private Vector4[] _fingerPositions;
         public RenderTexture SDFTexture { get; private set; }
 
         public void Dispose()
@@ -21,6 +23,7 @@ namespace Features.Clay.Scripts
         {
             if (SDFTexture != null) SDFTexture.Release();
 
+            _desc = desc;
             var resolution = desc.resolution;
             var texDesc = new RenderTextureDescriptor(resolution, resolution, RenderTextureFormat.RHalf)
             {
@@ -34,6 +37,8 @@ namespace Features.Clay.Scripts
 
             _computeShader = new ComputeShaderWrapper<Kernel, Uniform>(desc.computeShader);
             _computeShader.SetTexture(Kernel.init_cylinder_sdf, Uniform.sdf_texture, SDFTexture);
+            _computeShader.SetTexture(Kernel.deform_sdf, Uniform.sdf_texture, SDFTexture);
+
             _computeShader.SetInts(Uniform.resolution, resolution, resolution, resolution);
             _computeShader.SetVector(Uniform.bounds_min, new float4(desc.boundsMin, 0));
             _computeShader.SetVector(Uniform.bounds_max, new float4(desc.boundsMax, 0));
@@ -45,8 +50,25 @@ namespace Features.Clay.Scripts
             _computeShader.Dispatch(Kernel.init_cylinder_sdf, new uint3(resolution));
         }
 
+        public void Tick()
+        {
+            var resolution = _desc.resolution;
+            _computeShader.Dispatch(Kernel.deform_sdf, new uint3(resolution));
+        }
+
+        public void OnDrawGizmos(in float3 origin)
+        {
+            Gizmos.color = Color.green;
+            foreach (var pos in _fingerPositions)
+            {
+                var center = new float3(pos.x, pos.y, pos.z) + origin;
+                Gizmos.DrawWireSphere(center, _desc.fingerRadius);
+            }
+        }
+
         public void UpdateFingerPositions(Vector4[] positions)
         {
+            _fingerPositions = positions;
             _computeShader.SetVectorArray(Uniform.finger_positions, positions);
         }
 
