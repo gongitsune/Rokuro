@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 
 public class ControllerManager : MonoBehaviour
 {
+    [SerializeField] private Camera mainCam;
     [SerializeField] private GameObject leftHandPrefab, rightHandPrefab;
     [SerializeField] private float moveSpeed, rotateSpeed;
     [SerializeField]
@@ -48,10 +49,8 @@ public class ControllerManager : MonoBehaviour
 
     private void UpdateHand(Transform hand, HandInputInfo info)
     {
-        hand.SetPositionAndRotation(
-            Vector3.Lerp(hand.position, info.position, moveSpeed * Time.deltaTime),
-            Quaternion.Slerp(hand.rotation, info.rotation, rotateSpeed * Time.deltaTime)
-        );
+        hand.localRotation = Quaternion.Slerp(hand.localRotation, info.rotation, rotateSpeed * Time.deltaTime);
+        hand.localPosition = Vector3.Lerp(hand.localPosition, info.position, moveSpeed * Time.deltaTime);
     }
 
     private class HandInputInfo
