@@ -1,4 +1,5 @@
 using Sirenix.OdinInspector;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -26,15 +27,25 @@ namespace Features.Clay.Scripts
             clayRenderer.Initialize(this);
 
             _handsPositions = new Vector4[2];
+            for (var i = 0; i < _handsPositions.Length; i++)
+                _handsPositions[i] = Vector4.one * 100;
         }
 
         private void Update()
         {
-            for (var i = 0; i < _handsPositions.Length; i++)
-                if (i < hands.Length)
-                    _handsPositions[i] = hands[i].position - transform.position;
-                else
-                    _handsPositions[i] = Vector3.one * 100;
+            for (var i = 0; i < hands.Length; i++)
+            {
+                // 指の座標をSDFの逆回転方向に変換
+                var localPos = hands[i].position - transform.position;
+                var cosA = math.cos(-Angle);
+                var sinA = math.sin(-Angle);
+                var rotatedPos = new Vector3(
+                    localPos.x * cosA - localPos.z * sinA,
+                    localPos.y,
+                    localPos.x * sinA + localPos.z * cosA
+                );
+                _handsPositions[i] = rotatedPos;
+            }
 
             Angle += clayComputeDesc.rotateSpeed * Time.deltaTime;
 
