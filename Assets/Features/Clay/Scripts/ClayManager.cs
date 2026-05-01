@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -11,6 +12,8 @@ namespace Features.Clay.Scripts
 
         private ClayCompute _clayCompute;
         private Vector4[] _handsPositions;
+
+        [ShowInInspector] [ReadOnly] public float Angle { get; private set; }
 
         public RenderTexture SDFTexture => _clayCompute.SDFTexture;
         public ClayCompute.Desc ClayComputeDesc => clayComputeDesc;
@@ -32,6 +35,8 @@ namespace Features.Clay.Scripts
                     _handsPositions[i] = hands[i].position - transform.position;
                 else
                     _handsPositions[i] = Vector3.one * 100;
+
+            Angle += clayComputeDesc.rotateSpeed * Time.deltaTime;
 
             _clayCompute.UpdateFingerPositions(_handsPositions);
             _clayCompute.Tick();

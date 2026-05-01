@@ -84,6 +84,7 @@ namespace Features.Clay.Scripts
             public float cylinderHeight = 0.6f;
             public float fingerRadius = 0.15f;
             public float fingerStrength = 0.005f;
+            public float rotateSpeed = 0.1f;
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]

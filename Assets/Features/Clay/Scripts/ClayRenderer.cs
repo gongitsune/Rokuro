@@ -9,8 +9,8 @@ namespace Features.Clay.Scripts
     public class ClayRenderer : MonoBehaviour
     {
         [SerializeField] private Material clayMaterial;
-        private ClayManager _clayManager;
 
+        private ClayManager _clayManager;
         private MaterialWrapper<Uniforms> _material;
 
         public void Initialize(ClayManager clayManager)
@@ -32,16 +32,17 @@ namespace Features.Clay.Scripts
         public void Tick()
         {
             UpdateBounds();
+            _material.SetFloat(Uniforms.angle, _clayManager.Angle);
         }
 
         private void UpdateBounds()
         {
-            var pos = transform.position;
             var desc = _clayManager.ClayComputeDesc;
-            var boundsMin = desc.boundsMin + new float3(pos);
-            var boundsMax = desc.boundsMax + new float3(pos);
-            _material.SetVector(Uniforms.bounds_min, new float4(boundsMin, 0));
-            _material.SetVector(Uniforms.bounds_max, new float4(boundsMax, 0));
+            var pos = (float3)transform.position;
+            var min = desc.boundsMin + pos;
+            var max = desc.boundsMax + pos;
+            _material.SetVector(Uniforms.bounds_min, new float4(min, 0));
+            _material.SetVector(Uniforms.bounds_max, new float4(max, 0));
         }
 
         private Mesh CreateBoundingCube()
@@ -83,7 +84,8 @@ namespace Features.Clay.Scripts
             _sdf_tex,
             resolution,
             bounds_min,
-            bounds_max
+            bounds_max,
+            angle
         }
     }
 }
