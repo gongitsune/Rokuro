@@ -17,6 +17,13 @@ cbuffer Params
     float finger_strength;
 }
 
+// グリッド座標 → [0,1] → ワールド座標
+float3 grid_to_world(int3 id)
+{
+    float3 uvw = (float3(id) + 0.5) / float3(resolution);
+    return lerp(bounds_min, bounds_max, uvw);
+}
+
 // 無限円柱のSDF（Y軸中心）
 float sd_cylinder(float3 p, float radius, float half_height)
 {
@@ -30,9 +37,7 @@ void init_cylinder_sdf(uint3 id : SV_DispatchThreadID)
     // 範囲外チェック
     if (any(id >= (uint3)resolution)) return;
 
-    // グリッド座標 → [0,1] → ワールド座標
-    float3 uvw = (float3(id) + 0.5) / float3(resolution);
-    float3 p = lerp(bounds_min, bounds_max, uvw);
+    float3 p = grid_to_world(id);
 
     float dist = sd_cylinder(p, cylinder_radius, cylinder_height);
 
@@ -49,8 +54,7 @@ void deform_sdf(uint3 id : SV_DispatchThreadID)
 {
     if (any(id >= (uint3)resolution)) return;
 
-    float3 uvw = (float3(id) + 0.5) / float3(resolution);
-    float3 p = lerp(bounds_min, bounds_max, uvw);
+    float3 p = grid_to_world(id);
     float current = sdf_texture[id];
 
     float finger_sdf = 1e9;
