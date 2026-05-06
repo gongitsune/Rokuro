@@ -13,6 +13,7 @@ cbuffer Params
     float cylinder_radius;
     float cylinder_height; // 中心から上下への半値 (half-height)
     float4 finger_positions[MAX_FINGERS];
+    float4 finger_directions[MAX_FINGERS];
     float finger_radius;
     float finger_strength;
 }
@@ -49,6 +50,75 @@ float sd_sphere(float3 p, float3 center, float radius)
     return length(p - center) - radius;
 }
 
+// サンプル: ワールド座標からSDF値を取得（最近傍）
+float sample_sdf_world(float3 pos)
+{
+    float3 denom = bounds_max - bounds_min;
+    // 異常回避
+    denom = max(denom, float3(1e-6, 1e-6, 1e-6));
+    float3 uv = (pos - bounds_min) / denom;
+    // テクスチャインデックスに変換
+    float3 fidx = uv * float3(resolution) - 0.5;
+    int3 idx = int3(floor(fidx + 0.5));
+    idx = clamp(idx, int3(0, 0, 0), resolution - 1);
+    return sdf_texture[idx];
+}
+
+// 中心差分で法線を推定
+float3 estimate_normal(float3 pos, float3 voxel_size)
+{
+    float sx = sample_sdf_world(pos + float3(voxel_size.x, 0, 0));
+    float nx = sample_sdf_world(pos - float3(voxel_size.x, 0, 0));
+    float sy = sample_sdf_world(pos + float3(0, voxel_size.y, 0));
+    float ny = sample_sdf_world(pos - float3(0, voxel_size.y, 0));
+    float sz = sample_sdf_world(pos + float3(0, 0, voxel_size.z));
+    float nz = sample_sdf_world(pos - float3(0, 0, voxel_size.z));
+
+    float3 n = float3(sx - nx, sy - ny, sz - nz);
+    return normalize(n);
+}
+
+// 指の位置と方向からSDFの表面との交差点を探す（前方ステップ、符号変化で検出）
+bool find_surface_along_ray(float3 origin, float3 dir, out float3 surface_pos, float3 voxel_size)
+{
+    // 安全パラメータ
+    const int MAX_STEPS = 256;
+    float max_dist = length(bounds_max - bounds_min) * 2.0;
+    float step_size = max(max(voxel_size.x, voxel_size.y), voxel_size.z) * 0.5;
+    step_size = max(step_size, 1e-4);
+
+    float t = 0.0;
+    float prev_s = sample_sdf_world(origin);
+
+    // もし始点が既に負なら、一旦外側に出る方向へ少し移動してから探す
+    if (prev_s <= 0.0)
+    {
+        // origin から dir の逆方向へ少し移動して外側に出す
+        float3 back = origin - dir * step_size * 2.0;
+        prev_s = sample_sdf_world(back);
+        origin = back;
+    }
+
+    for (int i = 0; i < MAX_STEPS && t < max_dist; ++i)
+    {
+        t += step_size;
+        float3 pos = origin + dir * t;
+        float s = sample_sdf_world(pos);
+        if (s <= 0.0)
+        {
+            // 線形補間で交差点を近似
+            float denom = (s - prev_s);
+            float interp_t = (denom != 0.0) ? (t - step_size) - prev_s * step_size / denom : t;
+            surface_pos = origin + dir * interp_t;
+            return true;
+        }
+        prev_s = s;
+    }
+
+    surface_pos = float3(0, 0, 0);
+    return false;
+}
+
 [numthreads(8, 8, 8)]
 void deform_sdf(uint3 id : SV_DispatchThreadID)
 {
@@ -57,11 +127,40 @@ void deform_sdf(uint3 id : SV_DispatchThreadID)
     float3 p = grid_to_world(id);
     float current = sdf_texture[id];
 
-    float finger_sdf = 1e9;
-    for (int i = 0; i < MAX_FINGERS; i++)
-        finger_sdf = min(finger_sdf, sd_sphere(p, finger_positions[i].xyz, finger_radius));
+    // ボクセルのワールドサイズ
+    float3 voxel_size = (bounds_max - bounds_min) / float3(resolution);
 
+    float finger_sdf = 1e9;
+    float bulge_sdf = 1e9;
+
+    for (int i = 0; i < MAX_FINGERS; i++)
+    {
+        float3 finger_pos = finger_positions[i].xyz;
+        float3 finger_dir = normalize(finger_directions[i].xyz);
+
+        // 通常の削り用の球
+        finger_sdf = min(finger_sdf, sd_sphere(p, finger_pos, finger_radius));
+
+        // 指から表面への交差点を探す
+        float3 surface_pos;
+        bool hit = find_surface_along_ray(finger_pos, finger_dir, surface_pos, voxel_size);
+        if (hit)
+        {
+            // 表面法線を求める
+            float3 n = estimate_normal(surface_pos, voxel_size);
+            // 指の中心を表面の法線で面に対して反射させる
+            float d = dot(finger_pos - surface_pos, n);
+            float3 mirrored_center = finger_pos - 2.0 * d * n;
+
+            // 反射した位置に同じ半径の球を置き、盛り上がり（追加）を表現する
+            bulge_sdf = min(bulge_sdf, sd_sphere(p, mirrored_center, finger_radius));
+        }
+    }
+
+    // 指による削り（差し引き）
     float result = max(current, -finger_sdf);
+    // 反射による盛り上がり（追加）を合成（union）
+    result = min(result, bulge_sdf);
 
     sdf_texture[id] = result;
 }

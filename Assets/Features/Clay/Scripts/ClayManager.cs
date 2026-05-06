@@ -12,6 +12,7 @@ namespace Features.Clay.Scripts
         [SerializeField] private Transform[] hands;
 
         private ClayCompute _clayCompute;
+        private Vector4[] _handsDirections;
         private Vector4[] _handsPositions;
 
         [ShowInInspector] [ReadOnly] public float Angle { get; private set; }
@@ -27,6 +28,7 @@ namespace Features.Clay.Scripts
             clayRenderer.Initialize(this);
 
             _handsPositions = new Vector4[2];
+            _handsDirections = new Vector4[2];
             for (var i = 0; i < _handsPositions.Length; i++)
                 _handsPositions[i] = Vector4.one * 100;
         }
@@ -44,12 +46,21 @@ namespace Features.Clay.Scripts
                     localPos.y,
                     localPos.x * sinA + localPos.z * cosA
                 );
+
+                var forward = hands[i].forward;
+                var rotatedForward = new Vector3(
+                    forward.x * cosA - forward.z * sinA,
+                    forward.y,
+                    forward.x * sinA + forward.z * cosA
+                );
+
                 _handsPositions[i] = rotatedPos;
+                _handsDirections[i] = rotatedForward;
             }
 
             Angle += clayComputeDesc.rotateSpeed * Time.deltaTime;
 
-            _clayCompute.UpdateFingerPositions(_handsPositions);
+            _clayCompute.UpdateFingerPositions(_handsPositions, _handsDirections);
             _clayCompute.Tick();
             clayRenderer.Tick();
         }

@@ -11,7 +11,7 @@ namespace Features.Clay.Scripts
     {
         private ComputeShaderWrapper<Kernel, Uniform> _computeShader;
         private Desc _desc;
-        private Vector4[] _fingerPositions;
+        private Vector4[] _fingerPositions, _fingerDirections;
         public RenderTexture SDFTexture { get; private set; }
 
         public void Dispose()
@@ -61,17 +61,22 @@ namespace Features.Clay.Scripts
             if (_fingerPositions == null) return;
 
             Gizmos.color = Color.green;
-            foreach (var pos in _fingerPositions)
+            for (var i = 0; i < _fingerPositions.Length; i++)
             {
+                var pos = _fingerPositions[i];
+                var dir = _fingerDirections[i];
                 var center = new float3(pos.x, pos.y, pos.z) + origin;
                 Gizmos.DrawWireSphere(center, _desc.fingerRadius);
+                Gizmos.DrawLine(center, center + new float3(dir.x, dir.y, dir.z) * 0.5f);
             }
         }
 
-        public void UpdateFingerPositions(Vector4[] positions)
+        public void UpdateFingerPositions(Vector4[] positions, Vector4[] directions)
         {
             _fingerPositions = positions;
+            _fingerDirections = directions;
             _computeShader.SetVectorArray(Uniform.finger_positions, positions);
+            _computeShader.SetVectorArray(Uniform.finger_directions, directions);
         }
 
         [Serializable]
@@ -105,7 +110,8 @@ namespace Features.Clay.Scripts
             cylinder_height,
             finger_positions,
             finger_radius,
-            finger_strength
+            finger_strength,
+            finger_directions
         }
     }
 }

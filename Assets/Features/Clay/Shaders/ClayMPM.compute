@@ -1,0 +1,250 @@
+#pragma kernel clear_grid
+#pragma kernel particle_to_grid
+#pragma kernel grid_update
+#pragma kernel grid_to_particle
+#pragma kernel reset
+
+// ----------------------
+// インクルード
+// ----------------------
+#include "Assets/Features/Utils/Shaders/matrix.hlsl"
+#include "Assets/Features/Utils/Shaders/utils.hlsl"
+
+// ----------------------
+// 基本パラメタ
+// ----------------------
+cbuffer params
+{
+    int n_particles, n_grid; // パーティクル数とグリッド数
+    float dx, inv_dx; // 1 / n_grid
+    float dt; // delta time
+
+    float p_vol, p_rho; // 粒子一個の体積と密度
+    float p_mass; // 粒子一個の質量（= p_vol * p_rho）
+
+    float mu_0, lambda_0; // ラメ定数
+
+    // Drucker-Prager plasticity
+    float dp_alpha, dp_cohesion, dp_hardening; // 圧力依存の強さ, 粘着力, 硬化率
+    float damping; // ダンピング
+
+    float4 gravity;
+
+    float cylinder_radius;
+    float cylinder_height;
+}
+
+// ----------------------
+// フィールド
+// ----------------------
+RWStructuredBuffer<float3> x; // 粒子位置
+RWStructuredBuffer<float3> v; // 粒子速度
+RWStructuredBuffer<float3x3> c; // 速度勾配
+RWStructuredBuffer<float3x3> f; // 変形勾配
+RWStructuredBuffer<float> jp; // 塑性堆積変化の累計
+
+RWTexture3D<float3> grid_v;
+RWTexture3D<float> grid_m;
+
+// ----------------------
+// カーネル
+// ----------------------
+
+// グリッドの速度と質量を初期化
+// buffers: grid_v, grid_m
+[numthreads(8, 8, 8)]
+void clear_grid(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)n_grid)) return;
+
+    grid_v[id] = float3(0, 0, 0);
+    grid_m[id] = 0;
+}
+
+// P2G
+// buffers: x, f, c, v, jp, grid_v, grid_m
+[numthreads(32, 1, 1)]
+void particle_to_grid(uint id : SV_DispatchThreadID)
+{
+    if (id >= (uint)n_particles) return;
+
+    float3 x_p = x[id];
+    float3 v_p = v[id];
+    float3x3 c_p = c[id];
+    float3x3 f_p = f[id];
+    float jp_p = jp[id];
+
+    int3 base = x_p * inv_dx - 0.5;
+    float3 fx = x_p * inv_dx - (float)base;
+
+    float3x3 w = float3x3(
+        0.5 * POW2(1.5 - fx),
+        0.75 - POW2(fx - 1.0),
+        0.5 * POW2(fx - 0.5)
+    );
+
+    // deformation gradient
+    f_p = mul(FLOAT33_IDENTITY + dt * c_p, f_p);
+
+    // SVD
+    float3x3 u, v;
+    float3 sig;
+    svd_3x3(f_p, u, sig, v);
+
+    // Drucker-prager
+    sig = max(sig, 1e-6);
+    float3 eps = log(sig);
+    float trace_eps = eps.x + eps.y + eps.z;
+    float3 tau = 2.0 * mu_0 * eps + lambda_0 * trace_eps;
+    float mean_tau = (tau.x + tau.y + tau.z) / 3.0;
+    float3 dev = tau - mean_tau;
+    float dev_norm_sq = dev.x * dev.x + dev.y * dev.y + dev.z * dev.z;
+    float q_trial = sqrt(1.5 * dev_norm_sq);
+    float p_trial = -mean_tau;
+
+    float k_yield = dp_cohesion * (1.0 + dp_hardening * jp_p);
+    float yield_f = q_trial + dp_alpha * p_trial - k_yield;
+
+    float3 tau_new = tau;
+    if (yield_f > 0.0)
+    {
+        float bulk = lambda_0 + 2.0 * mu_0 / 3.0;
+        float denom = 3.0 * mu_0 + dp_alpha * dp_alpha * bulk + 1e-8;
+        float gamma = yield_f / denom;
+
+        float q_new = max(0.0, q_trial - 3.0 * mu_0 * gamma);
+        float p_new = max(0.0, p_trial - dp_alpha * bulk * gamma);
+
+        [flatten]
+        if (q_trial > 1e-8)
+        {
+            float scale = q_new / q_trial;
+            dev *= scale;
+        }
+        else
+        {
+            dev = 0;
+        }
+
+        float mean_tau_new = -p_new;
+        tau_new = dev + mean_tau_new;
+        jp_p += gamma;
+    }
+
+    float tr_tau_new = tau_new.x + tau_new.y + tau_new.z;
+    float inv_mu = 1.0 / (2.0 * mu_0);
+    float beta = lambda_0 / (2.0 * mu_0 + 3.0 * lambda_0);
+
+    float3 eps_new = (tau_new - beta * tr_tau_new) * inv_mu;
+    float3 sig_new = exp(eps_new);
+
+    float3x3 f_sig = float3x3(
+        sig_new.x, 0, 0,
+        0, sig_new.y, 0,
+        0, 0, sig_new.z
+    );
+    float3x3 stress_sig = float3x3(
+        tau_new.x, 0, 0,
+        0, tau_new.y, 0,
+        0, 0, tau_new.z
+    );
+    f_p = mul(mul(u, f_sig), transpose(v));
+    float3x3 stress = mul(mul(u, stress_sig), transpose(u));
+
+    stress = -dt * p_vol * 4.0 * inv_dx * inv_dx * stress;
+    float3x3 affine = stress * p_mass * c_p;
+    float3 momentum = p_mass * v_p;
+
+    // scatter
+    UNROLLED_CUBIC_FOR(3, 3, 3)
+    {
+        int3 offset = int3(i, j, k);
+        float3 d_pos = (offset - fx) * dx;
+        float weight = w[i][0] * w[j][1] * w[k][2];
+
+        grid_v[base + offset] += weight * (momentum + mul(affine, d_pos));
+        grid_m[base + offset] += weight * p_mass;
+    }
+
+    f[id] = f_p;
+    jp[id] = jp_p;
+}
+
+// buffers: grid_m, grid_v
+[numthreads(8, 8, 8)]
+void grid_update(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= (uint3)n_grid)) return;
+
+    if (grid_m[id] <= 0.0) return;
+
+    grid_v[id] /= grid_m[id];
+    grid_v[id] += dt * gravity.xyz;
+
+    // TODO: 手のひらで押す処理を入れる
+
+    // 境界
+    float3 g_v = grid_v[id];
+    int3 id_int = int3(id);
+    if (id_int.x < 3 && g_v.x < 0) g_v.x = 0;
+    if (id_int.x > n_grid - 3 && g_v.x > 0) g_v.x = 0;
+    if (id_int.y < 3 && g_v.y < 0) g_v.y = 0;
+    if (id_int.y > n_grid - 3 && g_v.y > 0) g_v.y = 0;
+    if (id_int.z < 3 && g_v.z < 0) g_v.z = 0;
+    if (id_int.z > n_grid - 3 && g_v.z > 0) g_v.z = 0;
+    grid_v[id] = g_v;
+}
+
+// buffers: x, v, c, grid_v
+[numthreads(32, 1, 1)]
+void grid_to_particle(uint id : SV_DispatchThreadID)
+{
+    if (id >= (uint)n_particles) return;
+
+    int3 base = x[id] * inv_dx - 0.5;
+    float3 fx = x[id] * inv_dx - base;
+
+    float3x3 w = float3x3(
+        0.5 * POW2(1.5 - fx),
+        0.75 - POW2(fx - 1.0),
+        0.5 * POW2(fx - 0.5)
+    );
+
+    float3 new_v = 0;
+    float3x3 new_c = 0;
+
+    UNROLLED_CUBIC_FOR(3, 3, 3)
+    {
+        int3 offset = int3(i, j, k);
+        float3 d_pos = offset - fx;
+        float3 g_v = grid_v[base + offset];
+        float weight = w[i][0] * w[j][1] * w[k][2];
+
+        new_v += weight * g_v;
+        new_c += 4.0 * inv_dx * weight * outer_product(g_v, d_pos);
+    }
+
+    v[id] = new_v * damping;
+    c[id] = new_c;
+    x[id] += dt * v[id];
+}
+
+// 粒子を円柱状に初期化して各バッファも初期化
+// buffers: x, v, f, c, jp
+[numthreads(32, 1, 1)]
+void reset(uint id : SV_DispatchThreadID)
+{
+    if (id >= (uint)n_particles) return;
+
+    float theta = rand(id) * 2.0 * PI;
+    float radius = cylinder_radius * sqrt(rand(id + 1));
+    x[id] = float3(
+        0.5 + radius * cos(theta),
+        rand(id + 2) * cylinder_height + 0.5,
+        0.5 + radius * sin(theta)
+    );
+    v[id] = 0;
+    f[id] = FLOAT33_IDENTITY;
+    c[id] = 0;
+    jp[id] = 0;
+}
