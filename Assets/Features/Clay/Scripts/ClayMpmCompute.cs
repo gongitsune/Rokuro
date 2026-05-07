@@ -74,16 +74,13 @@ namespace Features.Clay.Scripts
 
         public void Tick()
         {
-            var substeps = math.max(1, (int)math.floor(2e-3f / _desc.dt));
+            // var substeps = math.max(1, (int)math.floor(2e-3f / _desc.dt));
             var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
 
-            for (var i = 0; i < substeps; i++)
-            {
-                _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
-                _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
-                _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
-                _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
-            }
+            _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
+            _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
+            _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
+            _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
         }
 
         private void UpdateConstantBuffer()

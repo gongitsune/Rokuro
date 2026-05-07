@@ -139,22 +139,21 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
     int3 base = x_p * inv_dx - 0.5;
     float3 fx = x_p * inv_dx - (float)base;
 
-    float3x3 w = float3x3(
+    float3 w[] = {
         0.5 * POW2(1.5 - fx),
         0.75 - POW2(fx - 1.0),
         0.5 * POW2(fx - 0.5)
-    );
+    };
 
     // deformation gradient
     p.f = mul(FLOAT33_IDENTITY + dt * p.c, p.f);
 
     // SVD
-    float3x3 u, v;
-    float3 sig;
-    svd_3x3(p.f, u, sig, v);
+    float3x3 u, sig_mat, v;
+    svd_3x3(p.f, u, sig_mat, v);
 
     // Drucker-prager
-    sig = max(sig, 1e-6);
+    float3 sig = max(float3(sig_mat._m00, sig_mat._m11, sig_mat._m22), 1e-6);
     float3 eps = log(sig);
     float trace_eps = eps.x + eps.y + eps.z;
     float3 tau = 2.0 * mu_0 * eps + lambda_0 * trace_eps;
@@ -268,11 +267,11 @@ void grid_to_particle(uint id : SV_DispatchThreadID)
     int3 base = x[id] * inv_dx - 0.5;
     float3 fx = x[id] * inv_dx - base;
 
-    float3x3 w = float3x3(
+    float3 w[] = {
         0.5 * POW2(1.5 - fx),
         0.75 - POW2(fx - 1.0),
         0.5 * POW2(fx - 0.5)
-    );
+    };
 
     float3 new_v = 0;
     float3x3 new_c = 0;

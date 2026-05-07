@@ -3,229 +3,207 @@
 
 #define FLOAT33_IDENTITY float3x3(float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1))
 
-static const float svd_eps = 1e-6;
+static const float svd_eps = 1e-8;
+static const float svd_offdiag_eps = 1e-12;
 
-
-// ============================================================
-// Utility
-// ============================================================
 float3x3 outer_product(float3 a, float3 b)
 {
     return float3x3(a.x * b, a.y * b, a.z * b);
 }
 
-float3 get_column(float3x3 m, int i)
+float3 svd_normalize(float3 v, float eps)
 {
-    return float3(m[0][i], m[1][i], m[2][i]);
+    float n = sqrt(dot(v, v));
+    return v / max(n, eps);
 }
 
-void set_column(inout float3x3 m, int i, float3 v)
+float3 svd_orthogonal_unit(float3 v, float eps)
 {
-    m[0][i] = v.x;
-    m[1][i] = v.y;
-    m[2][i] = v.z;
+    float3 a = float3(1.0, 0.0, 0.0);
+    if (abs(v.x) > 0.9)
+    {
+        a = float3(0.0, 1.0, 0.0);
+    }
+    return svd_normalize(cross(v, a), eps);
 }
 
-void jacobi_rotate(
-    inout float3x3 A,
-    inout float3x3 V,
-    int p,
-    int q)
+float3x3 svd_transpose(float3x3 m)
 {
-    float apq = A[p][q];
-
-    if (abs(apq) < 1e-7)
-        return;
-
-    float app = A[p][p];
-    float aqq = A[q][q];
-
-    float tau = (aqq - app) / (2.0 * apq);
-
-    float t =
-        sign(tau) /
-        (abs(tau) + sqrt(1.0 + tau * tau));
-
-    float c = rsqrt(1.0 + t * t);
-    float s = t * c;
-
-    // Rotate A
-    int k;
-    [unroll] for (k = 0; k < 3; ++k)
-    {
-        float aik = A[p][k];
-        float aqk = A[q][k];
-
-        A[p][k] = c * aik - s * aqk;
-        A[q][k] = s * aik + c * aqk;
-    }
-
-    [unroll] for (k = 0; k < 3; ++k)
-    {
-        float akp = A[k][p];
-        float akq = A[k][q];
-
-        A[k][p] = c * akp - s * akq;
-        A[k][q] = s * akp + c * akq;
-    }
-
-    // Rotate V
-    [unroll] for (k = 0; k < 3; ++k)
-    {
-        float vip = V[k][p];
-        float viq = V[k][q];
-
-        V[k][p] = c * vip - s * viq;
-        V[k][q] = s * vip + c * viq;
-    }
-}
-
-void eigen_symmetric(
-    float3x3 a,
-    out float3 eigen_values,
-    out float3x3 eigen_vectors)
-{
-    eigen_vectors = FLOAT33_IDENTITY;
-
-    // Jacobi iterations
-    [unroll]
-    for (int i = 0; i < 10; ++i)
-    {
-        jacobi_rotate(a, eigen_vectors, 0, 1);
-        jacobi_rotate(a, eigen_vectors, 0, 2);
-        jacobi_rotate(a, eigen_vectors, 1, 2);
-    }
-
-    eigen_values = float3(
-        a[0][0],
-        a[1][1],
-        a[2][2]
+    return float3x3(
+        m[0].x, m[1].x, m[2].x,
+        m[0].y, m[1].y, m[2].y,
+        m[0].z, m[1].z, m[2].z
     );
 }
 
-// ============================================================
-// Sort singular values descending
-// ============================================================
-
-void swap_f(inout float a, inout float b)
+float3 svd_mul(float3x3 m, float3 v)
 {
-    float t = a;
-    a = b;
-    b = t;
+    return float3(dot(m[0], v), dot(m[1], v), dot(m[2], v));
 }
 
-void swap_v(inout float3 a, inout float3 b)
+float3 svd_get_col(float3x3 m, int c)
 {
-    float3 t = a;
-    a = b;
-    b = t;
+    return float3(m[0][c], m[1][c], m[2][c]);
 }
 
-void sort_singular_values(
-    inout float3 sigma,
-    inout float3x3 v)
+void svd_set_col(inout float3x3 m, int c, float3 v)
 {
-    float3 c0 = get_column(v, 0);
-    float3 c1 = get_column(v, 1);
-    float3 c2 = get_column(v, 2);
+    m[0][c] = v.x;
+    m[1][c] = v.y;
+    m[2][c] = v.z;
+}
 
-    if (sigma.x < sigma.y)
+float3x3 svd_mul_mat(float3x3 a, float3x3 b)
+{
+    float3x3 bt = svd_transpose(b);
+    return float3x3(
+        dot(a[0], bt[0]), dot(a[0], bt[1]), dot(a[0], bt[2]),
+        dot(a[1], bt[0]), dot(a[1], bt[1]), dot(a[1], bt[2]),
+        dot(a[2], bt[0]), dot(a[2], bt[1]), dot(a[2], bt[2])
+    );
+}
+
+void svd_apply_jacobi(inout float3x3 b, inout float3x3 v, int p, int q)
+{
+    float apq = b[p][q];
+    if (abs(apq) <= svd_offdiag_eps)
     {
-        swap_f(sigma.x, sigma.y);
-        swap_v(c0, c1);
+        return;
     }
 
-    if (sigma.x < sigma.z)
+    float app = b[p][p];
+    float aqq = b[q][q];
+    float phi = 0.5 * atan2(2.0 * apq, aqq - app);
+    float c = cos(phi);
+    float s = sin(phi);
+
+    int k;
+    [unroll]
+    for (k = 0; k < 3; ++k)
     {
-        swap_f(sigma.x, sigma.z);
-        swap_v(c0, c2);
+        float bpk = b[p][k];
+        float bqk = b[q][k];
+        b[p][k] = c * bpk - s * bqk;
+        b[q][k] = s * bpk + c * bqk;
     }
 
-    if (sigma.y < sigma.z)
+    [unroll]
+    for (k = 0; k < 3; ++k)
     {
-        swap_f(sigma.y, sigma.z);
-        swap_v(c1, c2);
+        float bkp = b[k][p];
+        float bkq = b[k][q];
+        b[k][p] = c * bkp - s * bkq;
+        b[k][q] = s * bkp + c * bkq;
     }
 
-    set_column(v, 0, c0);
-    set_column(v, 1, c1);
-    set_column(v, 2, c2);
+    b[p][q] = 0.0;
+    b[q][p] = 0.0;
+
+    [unroll]
+    for (k = 0; k < 3; ++k)
+    {
+        float vkp = v[k][p];
+        float vkq = v[k][q];
+        v[k][p] = c * vkp - s * vkq;
+        v[k][q] = s * vkp + c * vkq;
+    }
 }
 
-// ============================================================
-// Orthonormalize matrix columns
-// ============================================================
-
-float3 safe_normalize(float3 v)
+void svd_swap(inout float sa, inout float sb, inout float3 va, inout float3 vb)
 {
-    return normalize(v + 1e-20);
+    float ts = sa;
+    sa = sb;
+    sb = ts;
+    float3 tv = va;
+    va = vb;
+    vb = tv;
 }
 
-void orthonormalize(inout float3x3 M)
+void svd_3x3(float3x3 a, out float3x3 u, out float3x3 s, out float3x3 vOut)
 {
-    float3 c0 = get_column(M, 0);
-    float3 c1 = get_column(M, 1);
+    float eps = svd_eps;
+    float3x3 b = svd_mul_mat(svd_transpose(a), a);
+    float3x3 v = float3x3(
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0
+    );
 
-    c0 = safe_normalize(c0);
+    [unroll]
+    for (int sweep = 0; sweep < 8; ++sweep)
+    {
+        svd_apply_jacobi(b, v, 0, 1);
+        svd_apply_jacobi(b, v, 0, 2);
+        svd_apply_jacobi(b, v, 1, 2);
+    }
 
-    c1 = c1 - dot(c0, c1) * c0;
-    c1 = safe_normalize(c1);
+    float s0 = sqrt(max(b[0][0], eps));
+    float s1 = sqrt(max(b[1][1], eps));
+    float s2 = sqrt(max(b[2][2], eps));
 
-    float3 c2 = cross(c0, c1);
+    float3 v0 = svd_get_col(v, 0);
+    float3 v1 = svd_get_col(v, 1);
+    float3 v2 = svd_get_col(v, 2);
 
-    set_column(M, 0, c0);
-    set_column(M, 1, c1);
-    set_column(M, 2, c2);
-}
+    if (s0 < s1)
+    {
+        svd_swap(s0, s1, v0, v1);
+    }
+    if (s0 < s2)
+    {
+        svd_swap(s0, s2, v0, v2);
+    }
+    if (s1 < s2)
+    {
+        svd_swap(s1, s2, v1, v2);
+    }
 
-// ============================================================
-// Main SVD
-// ============================================================
+    v0 = svd_normalize(v0, eps);
+    v1 = v1 - dot(v0, v1) * v0;
+    if (dot(v1, v1) < eps)
+    {
+        v1 = svd_orthogonal_unit(v0, eps);
+    }
+    else
+    {
+        v1 = svd_normalize(v1, eps);
+    }
+    v2 = svd_normalize(cross(v0, v1), eps);
 
-void svd_3x3(
-    float3x3 f,
-    out float3x3 u,
-    out float3 sigma,
-    out float3x3 v)
-{
-    // --------------------------------------------------------
-    // Compute A = F^T F
-    // --------------------------------------------------------
+    float3 av0 = svd_mul(a, v0);
+    float3 av1 = svd_mul(a, v1);
+    float3 av2 = svd_mul(a, v2);
 
-    float3x3 A = mul(transpose(f), f);
+    float3 u0 = svd_normalize(av0, eps);
+    if (s0 > eps)
+    {
+        u0 = svd_normalize(av0 / s0, eps);
+    }
 
-    // --------------------------------------------------------
-    // Eigen decomposition
-    // --------------------------------------------------------
+    float3 u1;
+    if (s1 > eps)
+    {
+        u1 = av1 / s1;
+    }
+    else
+    {
+        u1 = svd_orthogonal_unit(u0, eps);
+    }
+    u1 = u1 - dot(u0, u1) * u0;
+    if (dot(u1, u1) < eps)
+    {
+        u1 = svd_orthogonal_unit(u0, eps);
+    }
+    else
+    {
+        u1 = svd_normalize(u1, eps);
+    }
 
-    float3 eigenvalues;
-
-    eigen_symmetric(A, eigenvalues, v);
-
-    // --------------------------------------------------------
-    // Singular values
-    // --------------------------------------------------------
-
-    sigma = sqrt(max(eigenvalues, 0.0));
-
-    // Sort descending
-    sort_singular_values(sigma, v);
-
-    // --------------------------------------------------------
-    // Recover U
-    // --------------------------------------------------------
-
-    float inv0 = 1.0 / max(sigma.x, svd_eps);
-    float inv1 = 1.0 / max(sigma.y, svd_eps);
-    float inv2 = 1.0 / max(sigma.z, svd_eps);
-
-    float3 v0 = get_column(v, 0);
-    float3 v1 = get_column(v, 1);
-    float3 v2 = get_column(v, 2);
-
-    float3 u0 = mul(f, v0) * inv0;
-    float3 u1 = mul(f, v1) * inv1;
-    float3 u2 = mul(f, v2) * inv2;
+    float3 u2 = svd_normalize(cross(u0, u1), eps);
+    if (dot(u2, u2) < eps && s2 > eps)
+    {
+        u2 = svd_normalize(av2 / s2, eps);
+    }
 
     u = float3x3(
         u0.x, u1.x, u2.x,
@@ -233,20 +211,17 @@ void svd_3x3(
         u0.z, u1.z, u2.z
     );
 
-    orthonormalize(u);
+    s = float3x3(
+        s0, 0.0, 0.0,
+        0.0, s1, 0.0,
+        0.0, 0.0, s2
+    );
 
-    // --------------------------------------------------------
-    // Reflection fix
-    // Ensure det(U) > 0
-    // --------------------------------------------------------
-
-    if (determinant(u) < 0.0)
-    {
-        sigma.z *= -1.0;
-
-        float3 c = get_column(u, 2);
-        set_column(u, 2, -c);
-    }
+    vOut = float3x3(
+        v0.x, v1.x, v2.x,
+        v0.y, v1.y, v2.y,
+        v0.z, v1.z, v2.z
+    );
 }
 
 #endif
