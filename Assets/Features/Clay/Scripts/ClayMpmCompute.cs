@@ -4,7 +4,6 @@ using Features.Utils.Scripts;
 using Sirenix.OdinInspector;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Features.Clay.Scripts
 {
@@ -12,8 +11,8 @@ namespace Features.Clay.Scripts
     {
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
         private readonly Desc _desc;
-        private readonly RenderTexture _gridVBuf, _gridMBuf;
-        private readonly GraphicsBuffer _xBuf, _vBuf, _cBuf, _fBuf, _jpBuf;
+        private readonly GraphicsBuffer _gridMBuf, _gridVxBuf, _gridVyBuf, _gridVzBuf;
+        private readonly GraphicsBuffer _xBuf, _particleBuf;
 
         public ClayMpmCompute(Desc desc)
         {
@@ -23,50 +22,43 @@ namespace Features.Clay.Scripts
             UpdateConstantBuffer();
 
             // バッファを初期化
+            var gridCount = desc.gridResolution * desc.gridResolution * desc.gridResolution;
             _xBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
-            _vBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
-            _cBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 9);
-            _fBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 9);
-            _jpBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float));
-            _gridVBuf = CreateRT(desc.gridResolution);
-            _gridMBuf = CreateRT(desc.gridResolution);
+            // HLSL particle struct: float3 v; float jp; float3x3 f; float3x3 c; => 3 + 1 + 9 + 9 = 22 floats
+            _particleBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 28);
+            _gridVxBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
+            _gridVyBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
+            _gridVzBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
+            _gridMBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
 
             // バッファをシェーダーにバインド
-            _computeShader.SetTexture(Kernels.clear_grid, Uniforms.grid_v, _gridVBuf);
-            _computeShader.SetTexture(Kernels.clear_grid, Uniforms.grid_m, _gridMBuf);
+            SetGridVBuf(Kernels.clear_grid);
+            _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_m, _gridMBuf);
 
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.x, _xBuf);
-            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.c, _cBuf);
-            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.f, _fBuf);
-            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.v, _vBuf);
-            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.jp, _jpBuf);
-            _computeShader.SetTexture(Kernels.particle_to_grid, Uniforms.grid_v, _gridVBuf);
-            _computeShader.SetTexture(Kernels.particle_to_grid, Uniforms.grid_m, _gridMBuf);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.particles, _particleBuf);
+            SetGridVBuf(Kernels.particle_to_grid);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_m, _gridMBuf);
 
-            _computeShader.SetTexture(Kernels.grid_update, Uniforms.grid_v, _gridVBuf);
-            _computeShader.SetTexture(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
+            SetGridVBuf(Kernels.grid_update);
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
 
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _xBuf);
-            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.c, _cBuf);
-            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.v, _vBuf);
-            _computeShader.SetTexture(Kernels.grid_to_particle, Uniforms.grid_v, _gridVBuf);
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.particles, _particleBuf);
+            SetGridVBuf(Kernels.grid_to_particle);
 
             _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _xBuf);
-            _computeShader.SetBuffer(Kernels.reset, Uniforms.c, _cBuf);
-            _computeShader.SetBuffer(Kernels.reset, Uniforms.f, _fBuf);
-            _computeShader.SetBuffer(Kernels.reset, Uniforms.v, _vBuf);
-            _computeShader.SetBuffer(Kernels.reset, Uniforms.jp, _jpBuf);
+            _computeShader.SetBuffer(Kernels.reset, Uniforms.particles, _particleBuf);
         }
 
         public void Dispose()
         {
             _xBuf?.Dispose();
-            _vBuf?.Dispose();
-            _cBuf?.Dispose();
-            _fBuf?.Dispose();
-            _jpBuf?.Dispose();
-            _gridMBuf?.Release();
-            _gridVBuf?.Release();
+            _particleBuf?.Dispose();
+            _gridMBuf?.Dispose();
+            _gridVxBuf?.Dispose();
+            _gridVyBuf?.Dispose();
+            _gridVzBuf?.Dispose();
         }
 
         public GraphicsBuffer GetParticlePosBuffer()
@@ -82,30 +74,22 @@ namespace Features.Clay.Scripts
 
         public void Tick()
         {
+            var substeps = math.max(1, (int)math.floor(2e-3f / _desc.dt));
             var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
-            _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
-            _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
-            _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
-            _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
-        }
 
-        private static RenderTexture CreateRT(int resolution)
-        {
-            var desc = new RenderTextureDescriptor(resolution, resolution, RenderTextureFormat.ARGBFloat)
+            for (var i = 0; i < substeps; i++)
             {
-                dimension = TextureDimension.Tex3D,
-                volumeDepth = resolution,
-                enableRandomWrite = true,
-                useMipMap = false
-            };
-            var rt = new RenderTexture(desc);
-            rt.Create();
-            return rt;
+                _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
+                _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
+            }
         }
 
         private void UpdateConstantBuffer()
         {
-            var pVol = math.pow(1f / _desc.gridResolution, 3);
+            var dx = 1f / _desc.gridResolution;
+            var pVol = math.pow(dx * 0.5f, 3);
             var pMass = pVol * _desc.particleRho;
             var mu0 = _desc.youngModulus / (2f * (1f + _desc.nu));
             var lambda0 = _desc.youngModulus * _desc.nu / ((1 + _desc.nu) * (1f - 2f * _desc.nu));
@@ -114,7 +98,7 @@ namespace Features.Clay.Scripts
 
             _computeShader.SetInt(Uniforms.n_particles, _desc.particleCount);
             _computeShader.SetInt(Uniforms.n_grid, _desc.gridResolution);
-            _computeShader.SetFloat(Uniforms.dx, 1f / _desc.gridResolution);
+            _computeShader.SetFloat(Uniforms.dx, dx);
             _computeShader.SetFloat(Uniforms.inv_dx, _desc.gridResolution);
             _computeShader.SetFloat(Uniforms.dt, _desc.dt);
             _computeShader.SetFloat(Uniforms.p_vol, pVol);
@@ -129,6 +113,13 @@ namespace Features.Clay.Scripts
             _computeShader.SetVector(Uniforms.gravity, new float4(_desc.gravity, 0));
             _computeShader.SetFloat(Uniforms.cylinder_radius, _desc.cylinderRadius);
             _computeShader.SetFloat(Uniforms.cylinder_height, _desc.cylinderHeight);
+        }
+
+        private void SetGridVBuf(Kernels kernel)
+        {
+            _computeShader.SetBuffer(kernel, Uniforms.grid_v_x, _gridVxBuf);
+            _computeShader.SetBuffer(kernel, Uniforms.grid_v_y, _gridVyBuf);
+            _computeShader.SetBuffer(kernel, Uniforms.grid_v_z, _gridVzBuf);
         }
 
         [Serializable]
@@ -149,7 +140,7 @@ namespace Features.Clay.Scripts
             [Title("Drucker-Prager plasticity")] public float frictionAngleDeg = 15f;
             public float dpCohesion = 14f;
             public float dpHardening = 0.8f;
-            public float damping = 0.96f;
+            public float damping = 0.95f;
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -183,11 +174,10 @@ namespace Features.Clay.Scripts
             cylinder_radius,
             cylinder_height,
             x,
-            v,
-            c,
-            f,
-            jp,
-            grid_v,
+            particles,
+            grid_v_x,
+            grid_v_y,
+            grid_v_z,
             grid_m
         }
     }

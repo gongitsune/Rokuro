@@ -5,10 +5,31 @@
 #pragma kernel reset
 
 // ----------------------
+// define
+// ----------------------
+#define FIXED_POINT_SCALE 1e7
+#define FIXED_POINT_SCALE_INV 1e-7
+
+// ----------------------
 // インクルード
 // ----------------------
 #include "Assets/Features/Utils/Shaders/matrix.hlsl"
 #include "Assets/Features/Utils/Shaders/utils.hlsl"
+
+// ----------------------
+// 構造体定義
+// ----------------------
+
+// MetalではUAVの数が8個までという制限があるらしい
+// だから、SoAを捨ててAoSにする...
+// TODO: パフォーマンスに問題があれば考える
+struct particle
+{
+    float3 v; // 速度
+    float jp; // 塑性堆積変化量の累計
+    float3x3 f; // 速度勾配
+    float3x3 c; // 変形勾配
+};
 
 // ----------------------
 // 基本パラメタ
@@ -38,13 +59,56 @@ cbuffer params
 // フィールド
 // ----------------------
 RWStructuredBuffer<float3> x; // 粒子位置
-RWStructuredBuffer<float3> v; // 粒子速度
-RWStructuredBuffer<float3x3> c; // 速度勾配
-RWStructuredBuffer<float3x3> f; // 変形勾配
-RWStructuredBuffer<float> jp; // 塑性堆積変化の累計
+RWStructuredBuffer<particle> particles; // 位置以外の粒子データ
 
-RWTexture3D<float3> grid_v;
-RWTexture3D<float> grid_m;
+// アトミック演算を行うために int にする
+RWStructuredBuffer<int> grid_v_x;
+RWStructuredBuffer<int> grid_v_y;
+RWStructuredBuffer<int> grid_v_z;
+RWStructuredBuffer<int> grid_m;
+
+// ----------------------
+// ユーティリティ
+// ----------------------
+uint grid_idx(uint3 id)
+{
+    return id.x + n_grid * (id.y + n_grid * id.z);
+}
+
+float3 get_grid_v(uint3 id)
+{
+    uint idx = grid_idx(id);
+    float x = grid_v_x[idx] * FIXED_POINT_SCALE_INV;
+    float y = grid_v_y[idx] * FIXED_POINT_SCALE_INV;
+    float z = grid_v_z[idx] * FIXED_POINT_SCALE_INV;
+    return float3(x, y, z);
+}
+
+void set_grid_v(uint3 id, float3 v)
+{
+    uint idx = grid_idx(id);
+    grid_v_x[idx] = round(v.x * FIXED_POINT_SCALE);
+    grid_v_y[idx] = round(v.y * FIXED_POINT_SCALE);
+    grid_v_z[idx] = round(v.z * FIXED_POINT_SCALE);
+}
+
+float get_grid_m(uint3 id)
+{
+    return grid_m[grid_idx(id)] * FIXED_POINT_SCALE_INV;
+}
+
+void atomic_add_grid_v(uint3 id, float3 v)
+{
+    uint idx = grid_idx(id);
+    InterlockedAdd(grid_v_x[idx], v.x * FIXED_POINT_SCALE);
+    InterlockedAdd(grid_v_y[idx], v.y * FIXED_POINT_SCALE);
+    InterlockedAdd(grid_v_z[idx], v.z * FIXED_POINT_SCALE);
+}
+
+void atomic_add_grid_m(uint3 id, float m)
+{
+    InterlockedAdd(grid_m[grid_idx(id)], m * FIXED_POINT_SCALE);
+}
 
 // ----------------------
 // カーネル
@@ -57,8 +121,9 @@ void clear_grid(uint3 id : SV_DispatchThreadID)
 {
     if (any(id >= (uint3)n_grid)) return;
 
-    grid_v[id] = float3(0, 0, 0);
-    grid_m[id] = 0;
+    uint idx = grid_idx(id);
+    set_grid_v(id, 0);
+    grid_m[idx] = 0;
 }
 
 // P2G
@@ -69,10 +134,7 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
     if (id >= (uint)n_particles) return;
 
     float3 x_p = x[id];
-    float3 v_p = v[id];
-    float3x3 c_p = c[id];
-    float3x3 f_p = f[id];
-    float jp_p = jp[id];
+    particle p = particles[id];
 
     int3 base = x_p * inv_dx - 0.5;
     float3 fx = x_p * inv_dx - (float)base;
@@ -84,12 +146,12 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
     );
 
     // deformation gradient
-    f_p = mul(FLOAT33_IDENTITY + dt * c_p, f_p);
+    p.f = mul(FLOAT33_IDENTITY + dt * p.c, p.f);
 
     // SVD
     float3x3 u, v;
     float3 sig;
-    svd_3x3(f_p, u, sig, v);
+    svd_3x3(p.f, u, sig, v);
 
     // Drucker-prager
     sig = max(sig, 1e-6);
@@ -102,7 +164,7 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
     float q_trial = sqrt(1.5 * dev_norm_sq);
     float p_trial = -mean_tau;
 
-    float k_yield = dp_cohesion * (1.0 + dp_hardening * jp_p);
+    float k_yield = dp_cohesion * (1.0 + dp_hardening * p.jp);
     float yield_f = q_trial + dp_alpha * p_trial - k_yield;
 
     float3 tau_new = tau;
@@ -128,7 +190,7 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
 
         float mean_tau_new = -p_new;
         tau_new = dev + mean_tau_new;
-        jp_p += gamma;
+        p.jp += gamma;
     }
 
     float tr_tau_new = tau_new.x + tau_new.y + tau_new.z;
@@ -148,26 +210,28 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
         0, tau_new.y, 0,
         0, 0, tau_new.z
     );
-    f_p = mul(mul(u, f_sig), transpose(v));
+    p.f = mul(mul(u, f_sig), transpose(v));
     float3x3 stress = mul(mul(u, stress_sig), transpose(u));
 
     stress = -dt * p_vol * 4.0 * inv_dx * inv_dx * stress;
-    float3x3 affine = stress * p_mass * c_p;
-    float3 momentum = p_mass * v_p;
+    float3x3 affine = stress + p_mass * p.c;
+    float3 momentum = p_mass * p.v;
 
     // scatter
     UNROLLED_CUBIC_FOR(3, 3, 3)
     {
         int3 offset = int3(i, j, k);
+        int3 offset_id = base + offset;
+        if (any(offset_id < 0) || any(offset_id >= n_grid)) continue;
+
         float3 d_pos = (offset - fx) * dx;
         float weight = w[i][0] * w[j][1] * w[k][2];
 
-        grid_v[base + offset] += weight * (momentum + mul(affine, d_pos));
-        grid_m[base + offset] += weight * p_mass;
+        atomic_add_grid_v(offset_id, weight * (momentum + mul(affine, d_pos)));
+        atomic_add_grid_m(offset_id, weight * p_mass);
     }
 
-    f[id] = f_p;
-    jp[id] = jp_p;
+    particles[id] = p;
 }
 
 // buffers: grid_m, grid_v
@@ -175,16 +239,16 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
 void grid_update(uint3 id : SV_DispatchThreadID)
 {
     if (any(id >= (uint3)n_grid)) return;
+    float mass = get_grid_m(id);
+    if (mass <= 0.0) return;
 
-    if (grid_m[id] <= 0.0) return;
-
-    grid_v[id] /= grid_m[id];
-    grid_v[id] += dt * gravity.xyz;
+    float3 g_v = get_grid_v(id);
+    g_v /= mass;
+    g_v += dt * gravity.xyz;
 
     // TODO: 手のひらで押す処理を入れる
 
     // 境界
-    float3 g_v = grid_v[id];
     int3 id_int = int3(id);
     if (id_int.x < 3 && g_v.x < 0) g_v.x = 0;
     if (id_int.x > n_grid - 3 && g_v.x > 0) g_v.x = 0;
@@ -192,7 +256,7 @@ void grid_update(uint3 id : SV_DispatchThreadID)
     if (id_int.y > n_grid - 3 && g_v.y > 0) g_v.y = 0;
     if (id_int.z < 3 && g_v.z < 0) g_v.z = 0;
     if (id_int.z > n_grid - 3 && g_v.z > 0) g_v.z = 0;
-    grid_v[id] = g_v;
+    set_grid_v(id, g_v);
 }
 
 // buffers: x, v, c, grid_v
@@ -216,17 +280,22 @@ void grid_to_particle(uint id : SV_DispatchThreadID)
     UNROLLED_CUBIC_FOR(3, 3, 3)
     {
         int3 offset = int3(i, j, k);
+        int3 offset_id = base + offset;
+        if (any(offset_id < 0) || any(offset_id >= n_grid)) continue;
+
         float3 d_pos = offset - fx;
-        float3 g_v = grid_v[base + offset];
+        float3 g_v = get_grid_v(offset_id);
         float weight = w[i][0] * w[j][1] * w[k][2];
 
         new_v += weight * g_v;
         new_c += 4.0 * inv_dx * weight * outer_product(g_v, d_pos);
     }
 
-    v[id] = new_v * damping;
-    c[id] = new_c;
-    x[id] += dt * v[id];
+    particle p = particles[id];
+    p.v = new_v * damping;
+    p.c = new_c;
+    particles[id] = p;
+    x[id] += dt * p.v;
 }
 
 // 粒子を円柱状に初期化して各バッファも初期化
@@ -243,8 +312,10 @@ void reset(uint id : SV_DispatchThreadID)
         rand(id + 2) * cylinder_height + 0.5,
         0.5 + radius * sin(theta)
     );
-    v[id] = 0;
-    f[id] = FLOAT33_IDENTITY;
-    c[id] = 0;
-    jp[id] = 0;
+    particle p;
+    p.v = 0;
+    p.f = FLOAT33_IDENTITY;
+    p.c = 0;
+    p.jp = 0;
+    particles[id] = p;
 }
