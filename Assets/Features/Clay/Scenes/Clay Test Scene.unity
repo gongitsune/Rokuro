@@ -321,6 +321,8 @@ MonoBehaviour:
     damping: 0.99
   rendererDesc:
     material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
+  particleRendererDesc:
+    material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
 --- !u!1 &323010402
 GameObject:
   m_ObjectHideFlags: 0
@@ -526,7 +528,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c39ee2453244b1784a1e8f998806202, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderer
-  clayMaterial: {fileID: 2100000, guid: 355f7f064dc1742d0b3573462c33e62d, type: 2}
 --- !u!23 &1395029811
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -596,28 +597,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d89fb45538514bfab4a2e51ca9748f36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayManager
-  clayComputeDesc:
-    computeShader: {fileID: 7200000, guid: bbaf3899009f4ee0b63b3e5392812bde, type: 3}
-    resolution: 128
-    boundsMin:
-      x: -1
-      y: -1
-      z: -1
-    boundsMax:
-      x: 1
-      y: 1
-      z: 1
-    cylinderRadius: 0.4
-    cylinderHeight: 0.6
-    fingerRadius: 0.15
-    fingerStrength: 0.005
-    rotateSpeed: 1
-  reconstructorDesc:
-    computeShader: {fileID: 7200000, guid: 4e2473b8b14e4c64ac8551a669f53358, type: 3}
-    periodFrame: 5
-  clayRenderer: {fileID: 1395029810}
-  hands:
-  - {fileID: 586472419}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

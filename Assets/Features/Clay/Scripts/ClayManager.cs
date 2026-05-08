@@ -6,8 +6,10 @@ namespace Features.Clay.Scripts
     {
         [SerializeField] private ClayCompute.Desc computeDesc;
         [SerializeField] private ClayRenderer.Desc rendererDesc;
+        [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
 
         private ClayCompute _compute;
+        private ClayParticleRenderer _particleRenderer;
         private ClayRenderer _renderer;
 
         private void Start()
@@ -16,6 +18,7 @@ namespace Features.Clay.Scripts
 
             _compute = new ClayCompute(computeDesc);
             _renderer = new ClayRenderer(rendererDesc, computeDesc, _compute);
+            _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
 
             _compute.Reset();
         }
@@ -23,7 +26,7 @@ namespace Features.Clay.Scripts
         private void Update()
         {
             _compute.Tick();
-            _renderer.Draw();
+            _particleRenderer.Render();
         }
 
         private void OnDestroy()
