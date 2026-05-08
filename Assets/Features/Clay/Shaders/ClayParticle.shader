@@ -1,4 +1,4 @@
-Shader "Custom/ClayMPM"
+Shader "Custom/ClayParticle"
 {
     Properties
     {

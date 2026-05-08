@@ -5,13 +5,13 @@ using UnityEngine;
 
 namespace Features.Clay.Scripts
 {
-    public class ClayMpmRenderer
+    public class ClayRenderer
     {
-        private readonly ClayMpmCompute.Desc _computeDesc;
+        private readonly ClayCompute.Desc _computeDesc;
         private readonly Desc _desc;
         private readonly MaterialWrapper<Uniforms> _material;
 
-        public ClayMpmRenderer(Desc desc, ClayMpmCompute.Desc computeDesc, ClayMpmCompute compute)
+        public ClayRenderer(Desc desc, ClayCompute.Desc computeDesc, ClayCompute compute)
         {
             _desc = desc;
             _computeDesc = computeDesc;

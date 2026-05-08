@@ -7,14 +7,14 @@ using UnityEngine;
 
 namespace Features.Clay.Scripts
 {
-    public class ClayMpmCompute : IDisposable
+    public class ClayCompute : IDisposable
     {
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
         private readonly Desc _desc;
         private readonly GraphicsBuffer _gridMBuf, _gridVxBuf, _gridVyBuf, _gridVzBuf;
         private readonly GraphicsBuffer _xBuf, _particleBuf;
 
-        public ClayMpmCompute(Desc desc)
+        public ClayCompute(Desc desc)
         {
             _desc = desc;
             _computeShader = new ComputeShaderWrapper<Kernels, Uniforms>(desc.computeShader);

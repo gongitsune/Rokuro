@@ -2,20 +2,20 @@ using UnityEngine;
 
 namespace Features.Clay.Scripts
 {
-    public class ClayMpmManager : MonoBehaviour
+    public class ClayManager : MonoBehaviour
     {
-        [SerializeField] private ClayMpmCompute.Desc computeDesc;
-        [SerializeField] private ClayMpmRenderer.Desc rendererDesc;
+        [SerializeField] private ClayCompute.Desc computeDesc;
+        [SerializeField] private ClayRenderer.Desc rendererDesc;
 
-        private ClayMpmCompute _compute;
-        private ClayMpmRenderer _renderer;
+        private ClayCompute _compute;
+        private ClayRenderer _renderer;
 
         private void Start()
         {
             Application.targetFrameRate = 60;
 
-            _compute = new ClayMpmCompute(computeDesc);
-            _renderer = new ClayMpmRenderer(rendererDesc, computeDesc, _compute);
+            _compute = new ClayCompute(computeDesc);
+            _renderer = new ClayRenderer(rendererDesc, computeDesc, _compute);
 
             _compute.Reset();
         }
