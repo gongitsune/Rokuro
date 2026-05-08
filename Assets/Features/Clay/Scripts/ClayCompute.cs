@@ -12,6 +12,7 @@ namespace Features.Clay.Scripts
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
         private readonly Desc _desc;
         private readonly GraphicsBuffer _gridMBuf, _gridVxBuf, _gridVyBuf, _gridVzBuf;
+        private readonly GraphicsBuffer _objectForcesBuf;
         private readonly GraphicsBuffer _xBuf, _particleBuf;
 
         public ClayCompute(Desc desc)
@@ -42,6 +43,11 @@ namespace Features.Clay.Scripts
             SetGridVBuf(Kernels.grid_update);
             _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
 
+            // オブジェクト力バッファを初期化（最大8個のオブジェクト）
+            _objectForcesBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, 8, sizeof(float) * 8);
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.object_forces, _objectForcesBuf);
+            _computeShader.SetInt(Uniforms.object_force_count, 0);
+
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _xBuf);
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.particles, _particleBuf);
             SetGridVBuf(Kernels.grid_to_particle);
@@ -58,16 +64,18 @@ namespace Features.Clay.Scripts
             _gridVxBuf?.Dispose();
             _gridVyBuf?.Dispose();
             _gridVzBuf?.Dispose();
-        }
-
-        public GraphicsBuffer GetGridMassBuffer()
-        {
-            return _gridMBuf;
+            _objectForcesBuf?.Dispose();
         }
 
         public GraphicsBuffer GetParticlePosBuffer()
         {
             return _xBuf;
+        }
+
+        public void SetObjectForces(ClayForce.ObjectForce[] forces, int forceCount)
+        {
+            if (forceCount is > 0 and <= 8) _objectForcesBuf.SetData(forces, 0, 0, forceCount);
+            _computeShader.SetInt(Uniforms.object_force_count, forceCount);
         }
 
         public void Reset()
@@ -182,7 +190,9 @@ namespace Features.Clay.Scripts
             grid_v_x,
             grid_v_y,
             grid_v_z,
-            grid_m
+            grid_m,
+            object_forces,
+            object_force_count
         }
     }
 }

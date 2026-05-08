@@ -35,6 +35,13 @@ struct particle
     float3x3 c; // 変形勾配
 };
 
+struct object_force
+{
+    float3 position;
+    float radius;
+    float strength;
+};
+
 // ----------------------
 // 基本パラメタ
 // ----------------------
@@ -57,6 +64,9 @@ cbuffer params
 
     float cylinder_radius;
     float cylinder_height;
+
+    int object_force_count; // オブジェクト力の数
+    float padding_obj;
 }
 
 // ----------------------
@@ -70,6 +80,9 @@ RWStructuredBuffer<int> grid_v_x;
 RWStructuredBuffer<int> grid_v_y;
 RWStructuredBuffer<int> grid_v_z;
 RWStructuredBuffer<int> grid_m;
+
+// オブジェクト力バッファ
+StructuredBuffer<object_force> object_forces;
 
 // ----------------------
 // ユーティリティ
@@ -244,7 +257,25 @@ void grid_update(uint3 id : SV_DispatchThreadID)
     float3 g_v = get_grid_v(id) / weight_sum;
     g_v += dt * gravity.xyz;
 
-    // TODO: 手のひらで押す処理を入れる
+    // オブジェクト押込み力を適用
+    for (int i = 0; i < object_force_count; i++)
+    {
+        object_force obj = object_forces[i];
+        float3 grid_pos = float3(id) * dx;
+        float3 diff = grid_pos - obj.position;
+        float dist = length(diff);
+
+        if (dist < obj.radius && dist > 1e-6)
+        {
+            // 距離に応じた減衰関数 (smooth falloff)
+            float falloff = 1.0 - (dist / obj.radius);
+            falloff = falloff * falloff; // quadratic falloff
+
+            // オブジェクト方向への押込み力
+            float3 push_dir = normalize(diff);
+            g_v += push_dir * obj.strength * falloff * dt;
+        }
+    }
 
     // 境界
     int3 id_int = int3(id);
