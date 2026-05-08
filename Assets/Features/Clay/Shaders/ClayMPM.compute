@@ -1,3 +1,5 @@
+#pragma enable_d3d11_debug_symbols
+
 #pragma kernel clear_grid
 #pragma kernel particle_to_grid
 #pragma kernel grid_update
@@ -7,8 +9,10 @@
 // ----------------------
 // define
 // ----------------------
-#define FIXED_POINT_SCALE 1e7
-#define FIXED_POINT_SCALE_INV 1e-7
+#define VEL_FP_SCALE 1e4
+#define VEL_FP_SCALE_INV 1e-4
+#define WEIGHT_FP_SCALE 1e6
+#define WEIGHT_FP_SCALE_INV 1e-6
 
 // ----------------------
 // インクルード
@@ -78,36 +82,36 @@ uint grid_idx(uint3 id)
 float3 get_grid_v(uint3 id)
 {
     uint idx = grid_idx(id);
-    float x = grid_v_x[idx] * FIXED_POINT_SCALE_INV;
-    float y = grid_v_y[idx] * FIXED_POINT_SCALE_INV;
-    float z = grid_v_z[idx] * FIXED_POINT_SCALE_INV;
+    float x = grid_v_x[idx] * VEL_FP_SCALE_INV;
+    float y = grid_v_y[idx] * VEL_FP_SCALE_INV;
+    float z = grid_v_z[idx] * VEL_FP_SCALE_INV;
     return float3(x, y, z);
 }
 
 void set_grid_v(uint3 id, float3 v)
 {
     uint idx = grid_idx(id);
-    grid_v_x[idx] = round(v.x * FIXED_POINT_SCALE);
-    grid_v_y[idx] = round(v.y * FIXED_POINT_SCALE);
-    grid_v_z[idx] = round(v.z * FIXED_POINT_SCALE);
+    grid_v_x[idx] = round(v.x * VEL_FP_SCALE);
+    grid_v_y[idx] = round(v.y * VEL_FP_SCALE);
+    grid_v_z[idx] = round(v.z * VEL_FP_SCALE);
 }
 
 float get_grid_m(uint3 id)
 {
-    return grid_m[grid_idx(id)] * FIXED_POINT_SCALE_INV;
+    return grid_m[grid_idx(id)] * WEIGHT_FP_SCALE_INV;
 }
 
 void atomic_add_grid_v(uint3 id, float3 v)
 {
     uint idx = grid_idx(id);
-    InterlockedAdd(grid_v_x[idx], v.x * FIXED_POINT_SCALE);
-    InterlockedAdd(grid_v_y[idx], v.y * FIXED_POINT_SCALE);
-    InterlockedAdd(grid_v_z[idx], v.z * FIXED_POINT_SCALE);
+    InterlockedAdd(grid_v_x[idx], (int)round(v.x * VEL_FP_SCALE));
+    InterlockedAdd(grid_v_y[idx], (int)round(v.y * VEL_FP_SCALE));
+    InterlockedAdd(grid_v_z[idx], (int)round(v.z * VEL_FP_SCALE));
 }
 
 void atomic_add_grid_m(uint3 id, float m)
 {
-    InterlockedAdd(grid_m[grid_idx(id)], m * FIXED_POINT_SCALE);
+    InterlockedAdd(grid_m[grid_idx(id)], (int)round(m * WEIGHT_FP_SCALE));
 }
 
 // ----------------------
@@ -137,7 +141,7 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
     particle p = particles[id];
 
     int3 base = x_p * inv_dx - 0.5;
-    float3 fx = x_p * inv_dx - (float)base;
+    float3 fx = x_p * inv_dx - base;
 
     float3 w[] = {
         0.5 * POW2(1.5 - fx),
@@ -176,16 +180,12 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
         float q_new = max(0.0, q_trial - 3.0 * mu_0 * gamma);
         float p_new = max(0.0, p_trial - dp_alpha * bulk * gamma);
 
-        [flatten]
         if (q_trial > 1e-8)
         {
             float scale = q_new / q_trial;
             dev *= scale;
         }
-        else
-        {
-            dev = 0;
-        }
+        else dev = 0;
 
         float mean_tau_new = -p_new;
         tau_new = dev + mean_tau_new;
@@ -214,7 +214,6 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
 
     stress = -dt * p_vol * 4.0 * inv_dx * inv_dx * stress;
     float3x3 affine = stress + p_mass * p.c;
-    float3 momentum = p_mass * p.v;
 
     // scatter
     UNROLLED_CUBIC_FOR(3, 3, 3)
@@ -224,10 +223,11 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
         if (any(offset_id < 0) || any(offset_id >= n_grid)) continue;
 
         float3 d_pos = (offset - fx) * dx;
-        float weight = w[i][0] * w[j][1] * w[k][2];
+        float weight = w[i].x * w[j].y * w[k].z;
 
-        atomic_add_grid_v(offset_id, weight * (momentum + mul(affine, d_pos)));
-        atomic_add_grid_m(offset_id, weight * p_mass);
+        float3 weighted_v = weight * (p.v + mul(affine, d_pos) / p_mass);
+        atomic_add_grid_v(offset_id, weighted_v);
+        atomic_add_grid_m(offset_id, weight);
     }
 
     particles[id] = p;
@@ -238,11 +238,10 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
 void grid_update(uint3 id : SV_DispatchThreadID)
 {
     if (any(id >= (uint3)n_grid)) return;
-    float mass = get_grid_m(id);
-    if (mass <= 0.0) return;
+    float weight_sum = get_grid_m(id);
+    if (weight_sum <= 0.0) return;
 
-    float3 g_v = get_grid_v(id);
-    g_v /= mass;
+    float3 g_v = get_grid_v(id) / weight_sum;
     g_v += dt * gravity.xyz;
 
     // TODO: 手のひらで押す処理を入れる
@@ -284,7 +283,7 @@ void grid_to_particle(uint id : SV_DispatchThreadID)
 
         float3 d_pos = offset - fx;
         float3 g_v = get_grid_v(offset_id);
-        float weight = w[i][0] * w[j][1] * w[k][2];
+        float weight = w[i].x * w[j].y * w[k].z;
 
         new_v += weight * g_v;
         new_c += 4.0 * inv_dx * weight * outer_product(g_v, d_pos);

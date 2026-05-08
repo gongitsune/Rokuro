@@ -24,7 +24,6 @@ namespace Features.Clay.Scripts
             // バッファを初期化
             var gridCount = desc.gridResolution * desc.gridResolution * desc.gridResolution;
             _xBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
-            // HLSL particle struct: float3 v; float jp; float3x3 f; float3x3 c; => 3 + 1 + 9 + 9 = 22 floats
             _particleBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 28);
             _gridVxBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
             _gridVyBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
@@ -61,6 +60,11 @@ namespace Features.Clay.Scripts
             _gridVzBuf?.Dispose();
         }
 
+        public GraphicsBuffer GetGridMassBuffer()
+        {
+            return _gridMBuf;
+        }
+
         public GraphicsBuffer GetParticlePosBuffer()
         {
             return _xBuf;
@@ -74,13 +78,15 @@ namespace Features.Clay.Scripts
 
         public void Tick()
         {
-            // var substeps = math.max(1, (int)math.floor(2e-3f / _desc.dt));
             var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
 
-            _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
-            _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
-            _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
-            _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
+            for (var i = 0; i < _desc.iter; i++)
+            {
+                _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
+                _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
+            }
         }
 
         private void UpdateConstantBuffer()
@@ -127,6 +133,7 @@ namespace Features.Clay.Scripts
             [Title("Common params")] public int particleCount = 18000;
             public int gridResolution = 64;
             public float dt = 2e-4f;
+            public int iter = 10;
             public float particleRho = 1;
             public float youngModulus = 700;
             public float nu = 0.2f;

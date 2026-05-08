@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Apple;
 
 namespace Features.Clay.Scripts
 {
@@ -10,7 +9,6 @@ namespace Features.Clay.Scripts
 
         private ClayMpmCompute _compute;
         private ClayMpmRenderer _renderer;
-        private bool _tick, _capture;
 
         private void Start()
         {
@@ -24,33 +22,13 @@ namespace Features.Clay.Scripts
 
         private void Update()
         {
-            if (_tick)
-            {
-                if (_capture) FrameCapture.BeginCaptureToXcode();
-
-                _compute.Tick();
-
-                if (_capture)
-                {
-                    _capture = false;
-                    FrameCapture.EndCapture();
-                }
-
-                _tick = false;
-            }
-
+            _compute.Tick();
             _renderer.Draw();
         }
 
         private void OnDestroy()
         {
             _compute.Dispose();
-        }
-
-        private void OnGUI()
-        {
-            if (!_tick && GUILayout.Button("Tick")) _tick = true;
-            _capture = GUILayout.Toggle(_capture, "Capture");
         }
     }
 }
