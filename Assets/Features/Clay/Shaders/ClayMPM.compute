@@ -307,7 +307,7 @@ void reset(uint id : SV_DispatchThreadID)
     float radius = cylinder_radius * sqrt(rand(id + 1));
     x[id] = float3(
         0.5 + radius * cos(theta),
-        rand(id + 2) * cylinder_height + 0.5,
+        rand(id + 2) * cylinder_height + 0.1,
         0.5 + radius * sin(theta)
     );
     particle p;

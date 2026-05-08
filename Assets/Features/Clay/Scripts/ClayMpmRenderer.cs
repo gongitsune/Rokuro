@@ -9,24 +9,33 @@ namespace Features.Clay.Scripts
     {
         private readonly ClayMpmCompute.Desc _computeDesc;
         private readonly Desc _desc;
+        private readonly MaterialWrapper<Uniforms> _material;
 
         public ClayMpmRenderer(Desc desc, ClayMpmCompute.Desc computeDesc, ClayMpmCompute compute)
         {
             _desc = desc;
             _computeDesc = computeDesc;
 
-            var material = new MaterialWrapper<Uniforms>(desc.material);
-            material.SetBuffer(Uniforms.x, compute.GetParticlePosBuffer());
+            _material = new MaterialWrapper<Uniforms>(desc.material);
+            _material.SetBuffer(Uniforms.x, compute.GetParticlePosBuffer());
         }
 
         public void Draw()
         {
+            var scale = _material.GetFloat(Uniforms.scale);
             var rp = new RenderParams
             {
                 material = _desc.material,
-                worldBounds = new Bounds(Vector3.zero, Vector3.one * 10)
+                worldBounds = new Bounds(Vector3.zero, Vector3.one * scale)
             };
-            Graphics.RenderPrimitives(in rp, MeshTopology.Points, _computeDesc.particleCount);
+            Graphics.RenderPrimitives(in rp, MeshTopology.Triangles, _computeDesc.particleCount * 6);
+        }
+
+        public void OnDrawGizmos()
+        {
+            var scale = _material.GetFloat(Uniforms.scale);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(Vector3.one * scale * 0.5f, Vector3.one * scale);
         }
 
         [Serializable]
@@ -38,7 +47,8 @@ namespace Features.Clay.Scripts
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         private enum Uniforms
         {
-            x
+            x,
+            scale
         }
     }
 }

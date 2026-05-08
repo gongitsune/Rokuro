@@ -30,5 +30,10 @@ namespace Features.Clay.Scripts
         {
             _compute.Dispose();
         }
+
+        private void OnDrawGizmos()
+        {
+            if (Application.isPlaying) _renderer.OnDrawGizmos();
+        }
     }
 }

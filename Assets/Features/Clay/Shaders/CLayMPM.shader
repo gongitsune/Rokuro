@@ -3,6 +3,7 @@ Shader "Custom/ClayMPM"
     Properties
     {
         scale("Scale", Float) = 10
+        radius("Radius", Float) = 0.1
     }
     SubShader
     {
@@ -25,6 +26,7 @@ Shader "Custom/ClayMPM"
 
             CBUFFER_START(UnityPerMaterial)
                 float scale;
+                float radius;
             CBUFFER_END
 
             StructuredBuffer<float3> x;
@@ -38,15 +40,26 @@ Shader "Custom/ClayMPM"
             {
                 float4 position_hcs : SV_POSITION;
                 float4 color : COLOR;
-                float p_size : PSIZE;
             };
 
             varyings vert(attributes IN)
             {
+                float3 p_pos = x[IN.vert_id / 6];
+                const float3 offsets[] = {
+                    float3(-radius, -radius, 0),
+                    float3(radius, -radius, 0),
+                    float3(radius, radius, 0),
+                    float3(-radius, -radius, 0),
+                    float3(radius, radius, 0),
+                    float3(-radius, radius, 0)
+                };
+                float3 offset = offsets[IN.vert_id % 6];
+                float3 pos = mul(UNITY_MATRIX_I_V, TransformObjectToWorld(offset));
+                // pos += p_pos;
+
                 varyings OUT;
-                OUT.position_hcs = TransformObjectToHClip(x[IN.vert_id] * scale);
+                OUT.position_hcs = TransformObjectToHClip(pos);
                 OUT.color = float4(1, 0, 0, 1);
-                OUT.p_size = 10;
                 return OUT;
             }
 
