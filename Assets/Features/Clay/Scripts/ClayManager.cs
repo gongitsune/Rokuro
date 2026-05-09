@@ -7,10 +7,12 @@ namespace Features.Clay.Scripts
         [SerializeField] private ClayCompute.Desc computeDesc;
         [SerializeField] private ClayRenderer.Desc rendererDesc;
         [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
+        [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
         [SerializeField] private ClayForce.Desc clayForceDesc;
         private ClayForce _clayForce;
 
         private ClayCompute _compute;
+        private ClayGridVelRenderer _gridVelRenderer;
         private ClayParticleRenderer _particleRenderer;
         private ClayRenderer _renderer;
 
@@ -21,6 +23,7 @@ namespace Features.Clay.Scripts
             _compute = new ClayCompute(computeDesc);
             _renderer = new ClayRenderer(rendererDesc, computeDesc, _compute);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
+            _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
             _clayForce = new ClayForce(clayForceDesc);
 
             _compute.Reset();
@@ -37,7 +40,8 @@ namespace Features.Clay.Scripts
             // シミュレーション実行
             _compute.Tick();
 
-            _particleRenderer.Render();
+            _particleRenderer.Draw();
+            _gridVelRenderer.Draw();
         }
 
         private void OnDestroy()

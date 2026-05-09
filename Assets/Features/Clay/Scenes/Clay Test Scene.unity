@@ -463,6 +463,8 @@ MonoBehaviour:
     material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
   particleRendererDesc:
     material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
+  gridVelRendererDesc:
+    material: {fileID: 2100000, guid: 671b80febbefb428280a3dd6046ecfbf, type: 2}
   clayForceDesc:
     showGizmos: 1
     gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

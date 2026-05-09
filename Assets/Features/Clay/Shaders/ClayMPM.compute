@@ -7,14 +7,6 @@
 #pragma kernel reset
 
 // ----------------------
-// define
-// ----------------------
-#define VEL_FP_SCALE 1e4
-#define VEL_FP_SCALE_INV 1e-4
-#define WEIGHT_FP_SCALE 1e6
-#define WEIGHT_FP_SCALE_INV 1e-6
-
-// ----------------------
 // インクルード
 // ----------------------
 #include "Assets/Features/Utils/Shaders/matrix.hlsl"
@@ -76,9 +68,7 @@ RWStructuredBuffer<float3> x; // 粒子位置
 RWStructuredBuffer<particle> particles; // 位置以外の粒子データ
 
 // アトミック演算を行うために int にする
-RWStructuredBuffer<int> grid_v_x;
-RWStructuredBuffer<int> grid_v_y;
-RWStructuredBuffer<int> grid_v_z;
+RWStructuredBuffer<int> grid_v;
 RWStructuredBuffer<int> grid_m;
 
 // オブジェクト力バッファ
@@ -94,19 +84,19 @@ uint grid_idx(uint3 id)
 
 float3 get_grid_v(uint3 id)
 {
-    uint idx = grid_idx(id);
-    float x = grid_v_x[idx] * VEL_FP_SCALE_INV;
-    float y = grid_v_y[idx] * VEL_FP_SCALE_INV;
-    float z = grid_v_z[idx] * VEL_FP_SCALE_INV;
+    uint idx = grid_idx(id) * 3;
+    float x = grid_v[idx] * VEL_FP_SCALE_INV;
+    float y = grid_v[idx + 1] * VEL_FP_SCALE_INV;
+    float z = grid_v[idx + 2] * VEL_FP_SCALE_INV;
     return float3(x, y, z);
 }
 
 void set_grid_v(uint3 id, float3 v)
 {
-    uint idx = grid_idx(id);
-    grid_v_x[idx] = round(v.x * VEL_FP_SCALE);
-    grid_v_y[idx] = round(v.y * VEL_FP_SCALE);
-    grid_v_z[idx] = round(v.z * VEL_FP_SCALE);
+    uint idx = grid_idx(id) * 3;
+    grid_v[idx] = round(v.x * VEL_FP_SCALE);
+    grid_v[idx + 1] = round(v.y * VEL_FP_SCALE);
+    grid_v[idx + 2] = round(v.z * VEL_FP_SCALE);
 }
 
 float get_grid_m(uint3 id)
@@ -116,10 +106,10 @@ float get_grid_m(uint3 id)
 
 void atomic_add_grid_v(uint3 id, float3 v)
 {
-    uint idx = grid_idx(id);
-    InterlockedAdd(grid_v_x[idx], (int)round(v.x * VEL_FP_SCALE));
-    InterlockedAdd(grid_v_y[idx], (int)round(v.y * VEL_FP_SCALE));
-    InterlockedAdd(grid_v_z[idx], (int)round(v.z * VEL_FP_SCALE));
+    uint idx = grid_idx(id) * 3;
+    InterlockedAdd(grid_v[idx], (int)round(v.x * VEL_FP_SCALE));
+    InterlockedAdd(grid_v[idx + 1], (int)round(v.y * VEL_FP_SCALE));
+    InterlockedAdd(grid_v[idx + 2], (int)round(v.z * VEL_FP_SCALE));
 }
 
 void atomic_add_grid_m(uint3 id, float m)

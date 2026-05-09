@@ -17,8 +17,6 @@ Shader "Custom/ClayParticle"
 
         Pass
         {
-            Cull Off
-
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag

@@ -11,7 +11,7 @@ namespace Features.Clay.Scripts
     {
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
         private readonly Desc _desc;
-        private readonly GraphicsBuffer _gridMBuf, _gridVxBuf, _gridVyBuf, _gridVzBuf;
+        private readonly GraphicsBuffer _gridMBuf, _gridVBuf;
         private readonly GraphicsBuffer _objectForcesBuf;
         private readonly GraphicsBuffer _xBuf, _particleBuf;
 
@@ -26,21 +26,19 @@ namespace Features.Clay.Scripts
             var gridCount = desc.gridResolution * desc.gridResolution * desc.gridResolution;
             _xBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
             _particleBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 28);
-            _gridVxBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
-            _gridVyBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
-            _gridVzBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
+            _gridVBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount * 3, sizeof(int));
             _gridMBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
 
             // バッファをシェーダーにバインド
-            SetGridVBuf(Kernels.clear_grid);
+            _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_v, _gridVBuf);
             _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_m, _gridMBuf);
 
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.x, _xBuf);
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.particles, _particleBuf);
-            SetGridVBuf(Kernels.particle_to_grid);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_v, _gridVBuf);
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_m, _gridMBuf);
 
-            SetGridVBuf(Kernels.grid_update);
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_v, _gridVBuf);
             _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
 
             // オブジェクト力バッファを初期化（最大8個のオブジェクト）
@@ -50,26 +48,31 @@ namespace Features.Clay.Scripts
 
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _xBuf);
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.particles, _particleBuf);
-            SetGridVBuf(Kernels.grid_to_particle);
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.grid_v, _gridVBuf);
 
             _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _xBuf);
             _computeShader.SetBuffer(Kernels.reset, Uniforms.particles, _particleBuf);
         }
+
+        public int GridResolution => _desc.gridResolution;
 
         public void Dispose()
         {
             _xBuf?.Dispose();
             _particleBuf?.Dispose();
             _gridMBuf?.Dispose();
-            _gridVxBuf?.Dispose();
-            _gridVyBuf?.Dispose();
-            _gridVzBuf?.Dispose();
+            _gridVBuf?.Dispose();
             _objectForcesBuf?.Dispose();
         }
 
         public GraphicsBuffer GetParticlePosBuffer()
         {
             return _xBuf;
+        }
+
+        public GraphicsBuffer GetGridVelBuffer()
+        {
+            return _gridVBuf;
         }
 
         public void SetObjectForces(ClayForce.ObjectForce[] forces, int forceCount)
@@ -126,13 +129,6 @@ namespace Features.Clay.Scripts
             _computeShader.SetFloat(Uniforms.cylinder_height, _desc.cylinderHeight);
         }
 
-        private void SetGridVBuf(Kernels kernel)
-        {
-            _computeShader.SetBuffer(kernel, Uniforms.grid_v_x, _gridVxBuf);
-            _computeShader.SetBuffer(kernel, Uniforms.grid_v_y, _gridVyBuf);
-            _computeShader.SetBuffer(kernel, Uniforms.grid_v_z, _gridVzBuf);
-        }
-
         [Serializable]
         public class Desc
         {
@@ -187,9 +183,7 @@ namespace Features.Clay.Scripts
             cylinder_height,
             x,
             particles,
-            grid_v_x,
-            grid_v_y,
-            grid_v_z,
+            grid_v,
             grid_m,
             object_forces,
             object_force_count

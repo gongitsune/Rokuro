@@ -25,7 +25,7 @@ namespace Features.Clay.Scripts
             _material.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
         }
 
-        public void Render()
+        public void Draw()
         {
             var rootPos = _transform.position;
             var scale = _material.GetFloat(Uniforms.scale);

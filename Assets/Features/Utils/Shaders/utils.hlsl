@@ -5,6 +5,14 @@
 #define POW2(x) ((x) * (x))
 #define PI 3.14159265358979323846
 
+// ----------------------
+// define
+// ----------------------
+#define VEL_FP_SCALE 1e4
+#define VEL_FP_SCALE_INV 1e-4
+#define WEIGHT_FP_SCALE 1e6
+#define WEIGHT_FP_SCALE_INV 1e-6
+
 // IbukiHash by Andante (https://twitter.com/andanteyk)
 // This work is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
 float rand(float4 v)
