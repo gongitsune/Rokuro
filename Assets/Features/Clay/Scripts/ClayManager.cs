@@ -53,7 +53,7 @@ namespace Features.Clay.Scripts
         {
             if (Application.isPlaying)
             {
-                _renderer.OnDrawGizmos();
+                _particleRenderer.OnDrawGizmos();
                 _clayForce?.DrawGizmos(transform.position, 1f);
             }
         }

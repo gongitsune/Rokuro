@@ -48,6 +48,8 @@ Shader "Custom/ClayParticle"
             {
                 float3 p_pos = x[IN.instance_id] * scale;
 
+                p_pos = TransformObjectToWorld(p_pos);
+
                 float3 cam_dir = normalize(_WorldSpaceCameraPos - p_pos);
                 float3 right = normalize(cross(float3(0, 1, 0), cam_dir));
                 float3 up = cross(cam_dir, right);
@@ -55,7 +57,7 @@ Shader "Custom/ClayParticle"
                 float3 pos = p_pos + right * vertex.x + up * vertex.y;
 
                 varyings OUT;
-                OUT.position_hcs = TransformObjectToHClip(pos);
+                OUT.position_hcs = TransformWorldToHClip(pos);
                 OUT.color = float4((float3)0.3, 1);
                 OUT.uv = IN.uv;
                 return OUT;

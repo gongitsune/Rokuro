@@ -257,13 +257,9 @@ void grid_update(uint3 id : SV_DispatchThreadID)
 
         if (dist < obj.radius && dist > 1e-6)
         {
-            // 距離に応じた減衰関数 (smooth falloff)
-            float falloff = 1.0 - (dist / obj.radius);
-            falloff = falloff * falloff; // quadratic falloff
-
             // オブジェクト方向への押込み力
             float3 push_dir = normalize(diff);
-            g_v += push_dir * obj.strength * falloff * dt;
+            g_v += push_dir * obj.strength * dt;
         }
     }
 
