@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Features.Clay.Scripts
 {
@@ -7,20 +6,13 @@ namespace Features.Clay.Scripts
     {
         public ClayRenderer(Desc desc, ClayCompute compute)
         {
-            if (desc.renderFeature) desc.renderFeature.Setup(compute);
+            desc.renderFeature.Setup(compute.GetParticlePosBuffer());
         }
 
         [Serializable]
         public class Desc
         {
             public ClayRenderFeature renderFeature;
-        }
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private enum Uniforms
-        {
-            x,
-            scale
         }
     }
 }

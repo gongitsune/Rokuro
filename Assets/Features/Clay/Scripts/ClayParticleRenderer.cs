@@ -29,6 +29,7 @@ namespace Features.Clay.Scripts
         {
             var rootPos = _transform.position;
             var scale = _material.GetFloat(Uniforms.scale);
+            _desc.material.SetPass(0);
             var rp = new RenderParams(_desc.material)
             {
                 worldBounds = new Bounds(rootPos, Vector3.one * scale)

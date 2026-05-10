@@ -14,14 +14,14 @@ namespace Features.Clay.Scripts
             _clayDepthPass.Dispose();
         }
 
-        public void Setup(ClayCompute clayCompute)
-        {
-            _clayDepthPass.Setup(clayCompute.GetParticlePosBuffer(), radius);
-        }
-
         public override void Create()
         {
             _clayDepthPass = new ClayDepthPass();
+        }
+
+        public void Setup(GraphicsBuffer particlePosBuffer)
+        {
+            _clayDepthPass.Setup(particlePosBuffer, radius);
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

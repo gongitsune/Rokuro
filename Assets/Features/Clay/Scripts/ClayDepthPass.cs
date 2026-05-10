@@ -12,57 +12,57 @@ namespace Features.Clay.Scripts
     {
         private const string ProfilerTag = "Clay Depth Render Pass";
         private const string ShaderName = "Hidden/Clay";
-
-        private MaterialWrapper<Uniforms> _material;
-        private GraphicsBuffer _particlePosBuffer;
+        private readonly bool[] _drawable;
+        private readonly MaterialWrapper<Uniforms> _mat;
+        private PassData _passData;
 
         public ClayDepthPass()
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
+            _drawable = new[] { false };
+            _mat = new MaterialWrapper<Uniforms>(new Material(Shader.Find(ShaderName)));
         }
 
         public void Dispose()
         {
-            if (_material != null)
-                CoreUtils.Destroy(_material.Material);
-            _material = null;
-            _particlePosBuffer = null;
+            CoreUtils.Destroy(_mat.Material);
         }
 
         public void Setup(GraphicsBuffer particlePosBuffer, float radius)
         {
-            _material = new MaterialWrapper<Uniforms>(new Material(Shader.Find(ShaderName)));
-            _material.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
-            _material.SetFloat(Uniforms.radius, radius);
+            _mat.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
+            _mat.SetFloat(Uniforms.radius, radius);
+            _drawable[0] = true;
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
-            if (_particlePosBuffer == null || _particlePosBuffer.count == 0) return;
-
             var camData = frameData.Get<UniversalCameraData>();
             var resourceData = frameData.Get<UniversalResourceData>();
             var cam = camData.camera;
 
-            _material.SetMatrix(Uniforms.UNITY_MATRIX_V, cam.worldToCameraMatrix);
-            _material.SetMatrix(Uniforms.UNITY_MATRIX_P, cam.projectionMatrix);
+            _mat.SetMatrix(Uniforms.UNITY_MATRIX_V, cam.worldToCameraMatrix);
+            _mat.SetMatrix(Uniforms.UNITY_MATRIX_P, cam.projectionMatrix);
 
             using var builder = renderGraph.AddRasterRenderPass(
                 "Clay Depth Pass",
-                out PassData passData,
+                out _passData,
                 new ProfilingSampler(ProfilerTag)
             );
 
-            passData.Mat = _material.Material;
-            passData.ParticleCount = _particlePosBuffer.count;
+            _passData.ParticleCount = 0;
+            _passData.Drawable = _drawable;
+            _passData.Mat = _mat;
 
             builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
 
             builder.SetRenderFunc<PassData>(static (data, ctx) =>
             {
+                if (!data.Drawable[0]) return;
+
                 ctx.cmd.DrawProcedural(
                     Matrix4x4.identity,
-                    data.Mat,
+                    data.Mat.Material,
                     0,
                     MeshTopology.Triangles,
                     6 * data.ParticleCount
@@ -81,7 +81,8 @@ namespace Features.Clay.Scripts
 
         private class PassData
         {
-            public Material Mat;
+            public bool[] Drawable;
+            public MaterialWrapper<Uniforms> Mat;
             public int ParticleCount;
         }
     }

@@ -1,6 +1,10 @@
 Shader "Hidden/Clay"
 {
-    Properties {}
+    Properties
+    {
+        radius("Radius", Float) = 0.05
+        scale("Scale", Float) = 1.0
+    }
     SubShader
     {
         Tags
@@ -30,6 +34,7 @@ Shader "Hidden/Clay"
 
             CBUFFER_START(UnityPerMaterial)
                 float radius;
+                float scale;
             CBUFFER_END
 
             StructuredBuffer<float3> particle_pos;

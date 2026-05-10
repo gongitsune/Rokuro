@@ -345,13 +345,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 266137085}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalRotation: {x: 0.2588191, y: 0, z: 0, w: 0.9659258}
+  m_LocalPosition: {x: 0.5, y: 0.7, z: -0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 30, y: 0, z: 0}
 --- !u!114 &266137089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -460,9 +460,9 @@ MonoBehaviour:
     dpHardening: 0.8
     damping: 0.99
   rendererDesc:
-    renderFeature: {fileID: -4046399327331155305, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+    renderFeature: {fileID: -3508160765237450550, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   particleRendererDesc:
-    material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
+    material: {fileID: 2100000, guid: 793d967e5c60e4ab8af180b37479bdc1, type: 2}
   gridVelRendererDesc:
     material: {fileID: 2100000, guid: 671b80febbefb428280a3dd6046ecfbf, type: 2}
   clayForceDesc:
