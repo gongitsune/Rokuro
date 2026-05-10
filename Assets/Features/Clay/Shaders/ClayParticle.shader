@@ -28,7 +28,7 @@ Shader "Custom/ClayParticle"
                 float radius;
             CBUFFER_END
 
-            StructuredBuffer<float3> x;
+            StructuredBuffer<float3> particle_pos;
 
             struct attributes
             {
@@ -46,7 +46,7 @@ Shader "Custom/ClayParticle"
 
             varyings vert(attributes IN)
             {
-                float3 p_pos = x[IN.instance_id] * scale;
+                float3 p_pos = particle_pos[IN.instance_id] * scale;
 
                 p_pos = TransformObjectToWorld(p_pos);
 

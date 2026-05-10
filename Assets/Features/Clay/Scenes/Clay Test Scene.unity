@@ -460,7 +460,7 @@ MonoBehaviour:
     dpHardening: 0.8
     damping: 0.99
   rendererDesc:
-    material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
+    renderFeature: {fileID: -4046399327331155305, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   particleRendererDesc:
     material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
   gridVelRendererDesc:
