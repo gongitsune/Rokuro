@@ -12,14 +12,13 @@ namespace Features.Clay.Scripts
     {
         private const string ProfilerTag = "Clay Depth Render Pass";
         private const string ShaderName = "Hidden/Clay";
-        private readonly bool[] _drawable;
         private readonly MaterialWrapper<Uniforms> _mat;
+        private readonly int[] _particleCount = { 0 };
         private PassData _passData;
 
         public ClayDepthPass()
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
-            _drawable = new[] { false };
             _mat = new MaterialWrapper<Uniforms>(new Material(Shader.Find(ShaderName)));
         }
 
@@ -32,7 +31,7 @@ namespace Features.Clay.Scripts
         {
             _mat.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
             _mat.SetFloat(Uniforms.radius, radius);
-            _drawable[0] = true;
+            _particleCount[0] = particlePosBuffer.count;
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -41,8 +40,8 @@ namespace Features.Clay.Scripts
             var resourceData = frameData.Get<UniversalResourceData>();
             var cam = camData.camera;
 
-            _mat.SetMatrix(Uniforms.UNITY_MATRIX_V, cam.worldToCameraMatrix);
-            _mat.SetMatrix(Uniforms.UNITY_MATRIX_P, cam.projectionMatrix);
+            _mat.SetMatrix(Uniforms.matrix_v, cam.worldToCameraMatrix);
+            _mat.SetMatrix(Uniforms.matrix_p, cam.projectionMatrix);
 
             using var builder = renderGraph.AddRasterRenderPass(
                 "Clay Depth Pass",
@@ -50,23 +49,26 @@ namespace Features.Clay.Scripts
                 new ProfilingSampler(ProfilerTag)
             );
 
-            _passData.ParticleCount = 0;
-            _passData.Drawable = _drawable;
             _passData.Mat = _mat;
+            _passData.ParticleCount = _particleCount;
 
-            builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
+            builder.AllowPassCulling(false);
+            builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture);
 
             builder.SetRenderFunc<PassData>(static (data, ctx) =>
             {
-                if (!data.Drawable[0]) return;
+                if (data.ParticleCount[0] <= 0) return;
 
-                ctx.cmd.DrawProcedural(
-                    Matrix4x4.identity,
-                    data.Mat.Material,
-                    0,
-                    MeshTopology.Triangles,
-                    6 * data.ParticleCount
-                );
+                using (new ProfilingScope(ctx.cmd, new ProfilingSampler(ProfilerTag)))
+                {
+                    ctx.cmd.DrawProcedural(
+                        Matrix4x4.identity,
+                        data.Mat.Material,
+                        0,
+                        MeshTopology.Triangles,
+                        6 * data.ParticleCount[0]
+                    );
+                }
             });
         }
 
@@ -75,15 +77,14 @@ namespace Features.Clay.Scripts
         {
             particle_pos,
             radius,
-            UNITY_MATRIX_V,
-            UNITY_MATRIX_P
+            matrix_v,
+            matrix_p
         }
 
         private class PassData
         {
-            public bool[] Drawable;
             public MaterialWrapper<Uniforms> Mat;
-            public int ParticleCount;
+            public int[] ParticleCount;
         }
     }
 }

@@ -16,25 +16,27 @@ Shader "Hidden/Clay"
 
         Pass
         {
-            Tags
-            {
-                "LightMode"="DepthOnly"
-            }
+            //            Tags
+            //            {
+            //                "LightMode"="DepthOnly"
+            //            }
 
-            ZWrite On
-            ZTest LEqual
             Cull Off
-            ColorMask 0
+            ZTest LEqual
+            ZWrite On
+            //            ColorMask 0
 
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float radius;
                 float scale;
+                float4x4 matrix_v;
+                float4x4 matrix_p;
             CBUFFER_END
 
             StructuredBuffer<float3> particle_pos;
@@ -64,14 +66,14 @@ Shader "Hidden/Clay"
                 float3 world_center = particle_pos[pid];
 
                 // ビュー空間に変換
-                float3 view_center = mul(UNITY_MATRIX_V, float4(world_center, 1.0)).xyz;
+                float3 view_center = mul(matrix_v, float4(world_center, 1.0)).xyz;
 
                 // ビュー空間でオフセット（ビルボード展開）
                 float2 offset = quad[corner] * radius;
                 float3 view_pos = view_center + float3(offset, 0.0);
 
                 varyings OUT;
-                OUT.clip_pos = mul(UNITY_MATRIX_P, float4(view_pos, 1.0));
+                OUT.clip_pos = mul(matrix_p, float4(view_pos, 1.0));
                 OUT.local_uv = quad[corner];
                 OUT.view_center = view_center;
                 return OUT;
@@ -87,7 +89,7 @@ Shader "Hidden/Clay"
                 float3 sphere_view_pos = IN.view_center + float3(0.0, 0.0, -z_offset);
 
                 // クリップ空間に変換してデプスを書き込む
-                float4 clip_pos = mul(UNITY_MATRIX_P, float4(sphere_view_pos, 1.0));
+                float4 clip_pos = mul(matrix_p, float4(sphere_view_pos, 1.0));
                 return clip_pos.z / clip_pos.w;
             }
             ENDHLSL

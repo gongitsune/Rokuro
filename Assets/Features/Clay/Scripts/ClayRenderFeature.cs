@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -19,8 +20,11 @@ namespace Features.Clay.Scripts
             _clayDepthPass = new ClayDepthPass();
         }
 
-        public void Setup(GraphicsBuffer particlePosBuffer)
+        public async UniTask Setup(GraphicsBuffer particlePosBuffer)
         {
+            await UniTask.WaitUntil(() => _clayDepthPass != null);
+            await UniTask.Yield();
+
             _clayDepthPass.Setup(particlePosBuffer, radius);
         }
 
