@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -6,7 +7,12 @@ namespace Features.Clay.Scripts
 {
     public class ClayRenderFeature : ScriptableRendererFeature
     {
-        [SerializeField] private float radius = 0.05f;
+        [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
+
+        [Title("Bilateral")] [SerializeField] private float sigmaSpace = 5f;
+        [SerializeField] private float sigmaDepth = 0.01f;
+        [SerializeField] private int kernelRadius = 7;
+
 
         private ClayDepthPass _clayDepthPass;
 
@@ -25,7 +31,11 @@ namespace Features.Clay.Scripts
             await UniTask.WaitUntil(() => _clayDepthPass != null);
             await UniTask.Yield();
 
-            _clayDepthPass.Setup(particlePosBuffer, radius);
+            _clayDepthPass.Setup(
+                particlePosBuffer,
+                radius,
+                sigmaSpace, sigmaDepth, kernelRadius
+            );
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

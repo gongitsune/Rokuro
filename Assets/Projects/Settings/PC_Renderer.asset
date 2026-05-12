@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
   m_Active: 1
-  radius: 0.01
+  radius: 0.05
+  sigmaSpace: 5
+  sigmaDepth: 0.01
+  kernelRadius: 7
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

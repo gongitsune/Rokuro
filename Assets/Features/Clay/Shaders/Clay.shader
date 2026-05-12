@@ -120,6 +120,7 @@ Shader "Hidden/Clay"
                 // ビュー空間でオフセット（ビルボード展開）
                 float2 offset = quad[corner] * radius;
                 float3 view_pos = view_center + float3(offset, 0.0);
+                view_pos.y *= -1.0; // 上下反転（Unityのスクリーン座標系に合わせる）
 
                 varyings OUT;
                 OUT.clip_pos = mul(matrix_p, float4(view_pos, 1.0));

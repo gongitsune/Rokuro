@@ -12,8 +12,6 @@ namespace Features.Clay.Scripts
     public class ClayDepthPass : ScriptableRenderPass, IDisposable
     {
         private const string DepthProfilerTag = "Clay Depth Render Pass";
-        private const string BilateralHProfilerTag = "Bilateral Horizontal Render Pass";
-        private const string BilateralVProfilerTag = "Bilateral Vertical Render Pass";
         private const string ShaderName = "Hidden/Clay";
         private readonly MaterialWrapper<Uniforms> _mat;
         private readonly int[] _particleCount = { 0 };
@@ -29,10 +27,17 @@ namespace Features.Clay.Scripts
             CoreUtils.Destroy(_mat.Material);
         }
 
-        public void Setup(GraphicsBuffer particlePosBuffer, float radius)
+        public void Setup(
+            GraphicsBuffer particlePosBuffer,
+            float radius,
+            float sigmaSpace, float sigmaDepth, int kernelRadius
+        )
         {
             _mat.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
             _mat.SetFloat(Uniforms.radius, radius);
+            _mat.SetFloat(Uniforms.sigma_space, sigmaSpace);
+            _mat.SetFloat(Uniforms.sigma_depth, sigmaDepth);
+            _mat.SetInt(Uniforms.kernel_radius, kernelRadius);
             _particleCount[0] = particlePosBuffer.count;
         }
 
@@ -105,6 +110,9 @@ namespace Features.Clay.Scripts
         {
             particle_pos,
             radius,
+            sigma_space,
+            sigma_depth,
+            kernel_radius,
             matrix_v,
             matrix_p
         }
@@ -113,7 +121,6 @@ namespace Features.Clay.Scripts
         {
             public MaterialWrapper<Uniforms> Mat;
             public int[] ParticleCount;
-            public TextureHandle SrcDepth;
         }
     }
 }
