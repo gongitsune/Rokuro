@@ -18,6 +18,11 @@ namespace Features.Utils.Scripts
                 .ToDictionary(t => t, t => Shader.PropertyToID(t.ToString()));
         }
 
+        public int GetPropertyId(TProp prop)
+        {
+            return _propMap[prop];
+        }
+
         public void SetFloat(TProp prop, float value)
         {
             Material.SetFloat(_propMap[prop], value);

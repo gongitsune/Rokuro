@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Clay MPM Mat
+  m_Name: Clay Particle Mat
   m_Shader: {fileID: 4800000, guid: 23d70d7748fb4f0a8bace64bef8d9195, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
