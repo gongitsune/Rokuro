@@ -4,47 +4,57 @@ namespace Features.Clay.Scripts
 {
     public class ClayManager : MonoBehaviour
     {
-        [SerializeField] private ClayCompute.Desc clayComputeDesc;
-        [SerializeField] private ClayRenderer clayRenderer;
-        [SerializeField] private Transform[] hands;
+        [SerializeField] private ClayCompute.Desc computeDesc;
+        [SerializeField] private ClayRenderer.Desc rendererDesc;
+        [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
+        [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
+        [SerializeField] private ClayForce.Desc clayForceDesc;
+        [SerializeField] private bool debugDraw = true;
 
-        private ClayCompute _clayCompute;
-        private Vector4[] _handsPositions;
-        public RenderTexture SDFTexture => _clayCompute.SDFTexture;
-        public ClayCompute.Desc ClayComputeDesc => clayComputeDesc;
+        private ClayForce _clayForce;
+        private ClayCompute _compute;
+        private ClayGridVelRenderer _gridVelRenderer;
+        private ClayParticleRenderer _particleRenderer;
+        private ClayRenderer _renderer;
 
         private void Start()
         {
-            _clayCompute = new ClayCompute();
-            _clayCompute.Initialize(clayComputeDesc);
-            clayRenderer.Initialize(this);
+            Application.targetFrameRate = 60;
 
-            _handsPositions = new Vector4[2];
+            _compute = new ClayCompute(computeDesc);
+            _renderer = new ClayRenderer(rendererDesc, _compute);
+            _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
+            _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
+            _clayForce = new ClayForce(clayForceDesc);
+
+            _compute.Reset();
         }
 
         private void Update()
         {
-            for (var i = 0; i < _handsPositions.Length; i++)
-                if (i < hands.Length)
-                    _handsPositions[i] = hands[i].position - transform.position;
-                else
-                    _handsPositions[i] = Vector3.one * 100;
+            _clayForce.Update(transform.position, 1f);
 
-            _clayCompute.UpdateFingerPositions(_handsPositions);
-            _clayCompute.Tick();
-            clayRenderer.Tick();
+            _compute.SetObjectForces(_clayForce.GetActiveForces(), _clayForce.GetActiveForceCount());
+            _compute.Tick();
+
+            if (debugDraw)
+            {
+                _particleRenderer.Draw();
+                _gridVelRenderer.Draw();
+            }
         }
 
         private void OnDestroy()
         {
-            _clayCompute.Dispose();
+            _compute.Dispose();
         }
 
-#if UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            _clayCompute?.OnDrawGizmos(transform.position);
+            if (!Application.isPlaying) return;
+
+            _particleRenderer.OnDrawGizmos();
+            _clayForce?.DrawGizmos(transform.position, 1f);
         }
-#endif
     }
 }

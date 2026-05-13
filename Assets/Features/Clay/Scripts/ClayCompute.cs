@@ -1,108 +1,192 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Features.Utils.Scripts;
+using Sirenix.OdinInspector;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Features.Clay.Scripts
 {
     public class ClayCompute : IDisposable
     {
-        private ComputeShaderWrapper<Kernel, Uniform> _computeShader;
-        private Desc _desc;
-        private Vector4[] _fingerPositions;
-        public RenderTexture SDFTexture { get; private set; }
+        private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
+        private readonly Desc _desc;
+        private readonly GraphicsBuffer _gridMBuf, _gridVBuf;
+        private readonly GraphicsBuffer _objectForcesBuf;
+        private readonly GraphicsBuffer _xBuf, _particleBuf;
+
+        public ClayCompute(Desc desc)
+        {
+            _desc = desc;
+            _computeShader = new ComputeShaderWrapper<Kernels, Uniforms>(desc.computeShader);
+
+            UpdateConstantBuffer();
+
+            // バッファを初期化
+            var gridCount = desc.gridResolution * desc.gridResolution * desc.gridResolution;
+            _xBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
+            _particleBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 28);
+            _gridVBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount * 3, sizeof(int));
+            _gridMBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
+
+            // バッファをシェーダーにバインド
+            _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_v, _gridVBuf);
+            _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_m, _gridMBuf);
+
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.particles, _particleBuf);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_v, _gridVBuf);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_m, _gridMBuf);
+
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_v, _gridVBuf);
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
+
+            // オブジェクト力バッファを初期化（最大8個のオブジェクト）
+            _objectForcesBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, 8, sizeof(float) * 8);
+            _computeShader.SetBuffer(Kernels.grid_update, Uniforms.object_forces, _objectForcesBuf);
+            _computeShader.SetInt(Uniforms.object_force_count, 0);
+
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.particles, _particleBuf);
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.grid_v, _gridVBuf);
+
+            _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.reset, Uniforms.particles, _particleBuf);
+        }
+
+        public int GridResolution => _desc.gridResolution;
 
         public void Dispose()
         {
-            if (SDFTexture != null) SDFTexture.Release();
+            _xBuf?.Dispose();
+            _particleBuf?.Dispose();
+            _gridMBuf?.Dispose();
+            _gridVBuf?.Dispose();
+            _objectForcesBuf?.Dispose();
         }
 
-        public void Initialize(Desc desc)
+        public GraphicsBuffer GetParticlePosBuffer()
         {
-            if (SDFTexture != null) SDFTexture.Release();
+            return _xBuf;
+        }
 
-            _desc = desc;
-            var resolution = desc.resolution;
-            var texDesc = new RenderTextureDescriptor(resolution, resolution, RenderTextureFormat.RHalf)
-            {
-                dimension = TextureDimension.Tex3D,
-                volumeDepth = resolution,
-                enableRandomWrite = true,
-                useMipMap = false
-            };
-            SDFTexture = new RenderTexture(texDesc);
-            SDFTexture.Create();
+        public GraphicsBuffer GetGridVelBuffer()
+        {
+            return _gridVBuf;
+        }
 
-            _computeShader = new ComputeShaderWrapper<Kernel, Uniform>(desc.computeShader);
-            _computeShader.SetTexture(Kernel.init_cylinder_sdf, Uniform.sdf_texture, SDFTexture);
-            _computeShader.SetTexture(Kernel.deform_sdf, Uniform.sdf_texture, SDFTexture);
+        public void SetObjectForces(ClayForce.ObjectForce[] forces, int forceCount)
+        {
+            if (forceCount is > 0 and <= 8) _objectForcesBuf.SetData(forces, 0, 0, forceCount);
+            _computeShader.SetInt(Uniforms.object_force_count, forceCount);
+        }
 
-            _computeShader.SetInts(Uniform.resolution, resolution, resolution, resolution);
-            _computeShader.SetVector(Uniform.bounds_min, new float4(desc.boundsMin, 0));
-            _computeShader.SetVector(Uniform.bounds_max, new float4(desc.boundsMax, 0));
-            _computeShader.SetFloat(Uniform.cylinder_radius, desc.cylinderRadius);
-            _computeShader.SetFloat(Uniform.cylinder_height, desc.cylinderHeight);
-            _computeShader.SetFloat(Uniform.finger_radius, desc.fingerRadius);
-            _computeShader.SetFloat(Uniform.finger_strength, desc.fingerStrength);
-
-            _computeShader.Dispatch(Kernel.init_cylinder_sdf, new uint3(resolution));
+        public void Reset()
+        {
+            var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
+            _computeShader.Dispatch(Kernels.reset, particleThread);
         }
 
         public void Tick()
         {
-            var resolution = _desc.resolution;
-            _computeShader.Dispatch(Kernel.deform_sdf, new uint3(resolution));
-        }
+            var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
 
-        public void OnDrawGizmos(in float3 origin)
-        {
-            Gizmos.color = Color.green;
-            foreach (var pos in _fingerPositions)
+            for (var i = 0; i < _desc.iter; i++)
             {
-                var center = new float3(pos.x, pos.y, pos.z) + origin;
-                Gizmos.DrawWireSphere(center, _desc.fingerRadius);
+                _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
+                _computeShader.Dispatch(Kernels.grid_update, (uint)_desc.gridResolution);
+                _computeShader.Dispatch(Kernels.grid_to_particle, particleThread);
             }
         }
 
-        public void UpdateFingerPositions(Vector4[] positions)
+        private void UpdateConstantBuffer()
         {
-            _fingerPositions = positions;
-            _computeShader.SetVectorArray(Uniform.finger_positions, positions);
+            var dx = 1f / _desc.gridResolution;
+            var pVol = math.pow(dx * 0.5f, 3);
+            var pMass = pVol * _desc.particleRho;
+            var mu0 = _desc.youngModulus / (2f * (1f + _desc.nu));
+            var lambda0 = _desc.youngModulus * _desc.nu / ((1 + _desc.nu) * (1f - 2f * _desc.nu));
+            var sinPhi = math.sin(math.radians(_desc.frictionAngleDeg));
+            var dpAlpha = 2f * sinPhi / (math.sqrt(3) * (3 - sinPhi));
+
+            _computeShader.SetInt(Uniforms.n_particles, _desc.particleCount);
+            _computeShader.SetInt(Uniforms.n_grid, _desc.gridResolution);
+            _computeShader.SetFloat(Uniforms.dx, dx);
+            _computeShader.SetFloat(Uniforms.inv_dx, _desc.gridResolution);
+            _computeShader.SetFloat(Uniforms.dt, _desc.dt);
+            _computeShader.SetFloat(Uniforms.p_vol, pVol);
+            _computeShader.SetFloat(Uniforms.p_rho, _desc.particleRho);
+            _computeShader.SetFloat(Uniforms.p_mass, pMass);
+            _computeShader.SetFloat(Uniforms.mu_0, mu0);
+            _computeShader.SetFloat(Uniforms.lambda_0, lambda0);
+            _computeShader.SetFloat(Uniforms.dp_alpha, dpAlpha);
+            _computeShader.SetFloat(Uniforms.dp_cohesion, _desc.dpCohesion);
+            _computeShader.SetFloat(Uniforms.dp_hardening, _desc.dpHardening);
+            _computeShader.SetFloat(Uniforms.damping, _desc.damping);
+            _computeShader.SetVector(Uniforms.gravity, new float4(_desc.gravity, 0));
+            _computeShader.SetFloat(Uniforms.cylinder_radius, _desc.cylinderRadius);
+            _computeShader.SetFloat(Uniforms.cylinder_height, _desc.cylinderHeight);
         }
 
         [Serializable]
         public class Desc
         {
             public ComputeShader computeShader;
-            public int resolution;
-            public float3 boundsMin = new(-1, -1, -1), boundsMax = new(1, 1, 1);
-            public float cylinderRadius = 0.4f;
-            public float cylinderHeight = 0.6f;
-            public float fingerRadius = 0.15f;
-            public float fingerStrength = 0.005f;
+
+            [Title("Common params")] public int particleCount = 18000;
+            public int gridResolution = 64;
+            public float dt = 2e-4f;
+            public int iter = 10;
+            public float particleRho = 1;
+            public float youngModulus = 700;
+            public float nu = 0.2f;
+            public float3 gravity = new(0, -9.81f, 0);
+            public float cylinderRadius = 0.125f;
+            public float cylinderHeight = 0.25f;
+
+            [Title("Drucker-Prager plasticity")] public float frictionAngleDeg = 15f;
+            public float dpCohesion = 14f;
+            public float dpHardening = 0.8f;
+            public float damping = 0.95f;
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private enum Kernel
+        private enum Kernels
         {
-            init_cylinder_sdf,
-            deform_sdf
+            clear_grid,
+            particle_to_grid,
+            grid_update,
+            grid_to_particle,
+            reset
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private enum Uniform
+        private enum Uniforms
         {
-            sdf_texture,
-            resolution,
-            bounds_min,
-            bounds_max,
+            n_particles,
+            n_grid,
+            dx,
+            inv_dx,
+            dt,
+            p_vol,
+            p_rho,
+            p_mass,
+            mu_0,
+            lambda_0,
+            dp_alpha,
+            dp_cohesion,
+            dp_hardening,
+            damping,
+            gravity,
             cylinder_radius,
             cylinder_height,
-            finger_positions,
-            finger_radius,
-            finger_strength
+            x,
+            particles,
+            grid_v,
+            grid_m,
+            object_forces,
+            object_force_count
         }
     }
 }
