@@ -16,24 +16,23 @@ namespace Features.Clay.Scripts
         {
             particle_pos,
             radius,
-            sigma_space,
-            sigma_depth,
-            kernel_radius,
+
+            projected_particle_constant,
+            depth_threshold,
+            max_filter_size,
+            blur_dir,
+
             light_dir,
             light_color,
             clay_color,
-            sss_strength,
-            matrix_v,
-            matrix_p,
-            matrix_inv_p,
-            _NormalRT
+            sss_strength
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
 
-        [Title("Bilateral")] [SerializeField] private float sigmaSpace = 5f;
-        [SerializeField] private float sigmaDepth = 0.01f;
-        [SerializeField] private int kernelRadius = 7;
+        [Title("Bilateral")] [SerializeField] private int maxFilterSize = 100;
+        [SerializeField] private float blueDepthScale = 10;
+        [SerializeField] private float blurFilterSize = 12;
 
         [Title("Shading")] [SerializeField] private float3 lightDir = new(1f, 1f, -1f);
         [SerializeField] private Color lightColor = Color.white;
@@ -51,7 +50,7 @@ namespace Features.Clay.Scripts
         public override void Create()
         {
             _mat = new MaterialWrapper<Uniforms>(CoreUtils.CreateEngineMaterial("Hidden/Clay"));
-            _clayDepthPass = new ClayDepthPass(_mat);
+            _clayDepthPass = new ClayDepthPass(_mat, CalcProjectedParticleConstant);
         }
 
         public async UniTask Setup(GraphicsBuffer particlePosBuffer)
@@ -61,15 +60,20 @@ namespace Features.Clay.Scripts
 
             _mat.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
             _mat.SetFloat(Uniforms.radius, radius);
-            _mat.SetFloat(Uniforms.sigma_space, sigmaSpace);
-            _mat.SetFloat(Uniforms.sigma_depth, sigmaDepth);
-            _mat.SetInt(Uniforms.kernel_radius, kernelRadius);
+            _mat.SetFloat(Uniforms.depth_threshold, radius * blueDepthScale);
+            _mat.SetInt(Uniforms.max_filter_size, maxFilterSize);
             _mat.SetVector(Uniforms.light_dir, new float4(math.normalize(lightDir), 1));
             _mat.SetColor(Uniforms.light_color, lightColor);
             _mat.SetColor(Uniforms.clay_color, clayColor);
             _mat.SetFloat(Uniforms.sss_strength, sssStrength);
 
             _clayDepthPass.Setup(particlePosBuffer);
+        }
+
+        private float CalcProjectedParticleConstant(float height, float fov)
+        {
+            var diameter = radius * 2f;
+            return blurFilterSize * diameter * 0.05f * (height * 0.5f) / math.tan(fov * 0.5f);
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

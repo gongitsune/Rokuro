@@ -38,10 +38,7 @@ namespace Features.Clay.Scripts
             _compute.Tick();
 
             if (debugDraw)
-            {
-                _particleRenderer.Draw();
                 _gridVelRenderer.Draw();
-            }
         }
 
         private void OnDestroy()

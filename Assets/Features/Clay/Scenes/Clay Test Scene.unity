@@ -346,7 +346,7 @@ Transform:
   m_GameObject: {fileID: 266137085}
   serializedVersion: 2
   m_LocalRotation: {x: 0.2588191, y: 0, z: 0, w: 0.9659258}
-  m_LocalPosition: {x: 0.5, y: 0.7, z: -0.5}
+  m_LocalPosition: {x: 0.5, y: 0.7, z: -0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -442,10 +442,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 16000
+    particleCount: 32000
     gridResolution: 64
     dt: 0.0002
-    iter: 10
+    iter: 100
     particleRho: 1
     youngModulus: 700
     nu: 0.2
@@ -472,7 +472,7 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 1
     maxObjectsDetected: 8
-    influenceRadius: 0.1
+    influenceRadius: 0.3
     pushStrength: 100
   debugDraw: 0
 --- !u!1 &323010402

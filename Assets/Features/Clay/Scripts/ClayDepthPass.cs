@@ -1,6 +1,7 @@
+using System;
 using Features.Utils.Scripts;
+using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
@@ -11,13 +12,16 @@ namespace Features.Clay.Scripts
     public class ClayDepthPass : ScriptableRenderPass
     {
         private const string DepthProfilerTag = "Clay Depth Render Pass";
+        private readonly Func<float, float, float> _calcProjected;
         private readonly MaterialWrapper<ClayRenderFeature.Uniforms> _mat;
         private readonly int[] _particleCount = { 0 };
 
-        public ClayDepthPass(MaterialWrapper<ClayRenderFeature.Uniforms> mat)
+        public ClayDepthPass(MaterialWrapper<ClayRenderFeature.Uniforms> mat, Func<float, float, float> calcProjected)
         {
-            renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
+            _calcProjected = calcProjected;
             _mat = mat;
+
+            renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
         }
 
         public void Setup(GraphicsBuffer particlePosBuffer)
@@ -37,17 +41,15 @@ namespace Features.Clay.Scripts
             depthDesc.clearBuffer = true;
             var depthTempRT = renderGraph.CreateTexture(depthDesc);
 
-            var colorDesc = renderGraph.GetTextureDesc(resourceData.activeColorTexture);
-            colorDesc.name = "Reconstruct Normal RT";
-            colorDesc.msaaSamples = MSAASamples.None;
-            colorDesc.clearBuffer = true;
-            colorDesc.colorFormat = GraphicsFormat.R16G16B16A16_SFloat;
-            var normalRT = renderGraph.CreateTexture(colorDesc);
+            _mat.SetFloat(
+                ClayRenderFeature.Uniforms.projected_particle_constant,
+                _calcProjected(depthDesc.height, math.radians(cam.fieldOfView))
+            );
 
-            var invP = Matrix4x4.Inverse(cam.worldToCameraMatrix);
-            _mat.SetMatrix(ClayRenderFeature.Uniforms.matrix_v, cam.worldToCameraMatrix);
-            _mat.SetMatrix(ClayRenderFeature.Uniforms.matrix_p, cam.projectionMatrix);
-            _mat.SetMatrix(ClayRenderFeature.Uniforms.matrix_inv_p, invP);
+            var blurHProp = new MaterialPropertyBlock();
+            blurHProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir), new Vector4(1, 0, 0, 0));
+            var blurVProp = new MaterialPropertyBlock();
+            blurVProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir), new Vector4(0, 1, 0, 0));
 
             using (var builder = renderGraph.AddRasterRenderPass(
                        "Clay Depth Pass",
@@ -78,37 +80,34 @@ namespace Features.Clay.Scripts
                 });
             }
 
-            renderGraph.AddBlitPass(
-                new RenderGraphUtils.BlitMaterialParameters(
-                    resourceData.activeDepthTexture,
-                    depthTempRT,
-                    _mat.Material,
-                    1
-                ),
-                "Bilateral Horizontal Pass"
-            );
-            renderGraph.AddBlitPass(
-                new RenderGraphUtils.BlitMaterialParameters(
-                    depthTempRT,
-                    resourceData.activeDepthTexture,
-                    _mat.Material,
-                    2
-                ),
-                "Bilateral Vertical Pass"
-            );
             using (var builder = renderGraph.AddBlitPass(
                        new RenderGraphUtils.BlitMaterialParameters(
                            resourceData.activeDepthTexture,
-                           normalRT,
+                           depthTempRT,
                            _mat.Material,
-                           3
+                           1,
+                           blurHProp
                        ),
-                       "Reconstruct Normal Pass",
+                       "Bilateral Horizontal Pass",
                        true
                    ))
             {
                 builder.AllowPassCulling(false);
-                builder.SetGlobalTextureAfterPass(normalRT, _mat.GetPropertyId(ClayRenderFeature.Uniforms._NormalRT));
+            }
+
+            using (var builder = renderGraph.AddBlitPass(
+                       new RenderGraphUtils.BlitMaterialParameters(
+                           depthTempRT,
+                           resourceData.activeDepthTexture,
+                           _mat.Material,
+                           1,
+                           blurVProp
+                       ),
+                       "Bilateral Vertical Pass",
+                       true
+                   ))
+            {
+                builder.AllowPassCulling(false);
             }
 
             using (var builder = renderGraph.AddBlitPass(
@@ -116,14 +115,13 @@ namespace Features.Clay.Scripts
                            resourceData.activeDepthTexture,
                            resourceData.activeColorTexture,
                            _mat.Material,
-                           4
+                           2
                        ),
                        "Clay Shading Pass",
                        true
                    ))
             {
                 builder.AllowPassCulling(false);
-                builder.UseTexture(normalRT);
             }
         }
 

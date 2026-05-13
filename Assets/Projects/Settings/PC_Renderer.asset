@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
   m_Active: 1
   radius: 0.05
-  sigmaSpace: 20
-  sigmaDepth: 0.01
-  kernelRadius: 7
+  maxFilterSize: 100
+  blueDepthScale: 10
+  blurFilterSize: 20
   lightDir:
     x: 1
     y: 1
