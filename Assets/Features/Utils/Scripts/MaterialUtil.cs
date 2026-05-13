@@ -56,6 +56,11 @@ namespace Features.Utils.Scripts
             Material.SetVector(_propMap[prop], value);
         }
 
+        public void SetColor(TProp prop, in Color32 value)
+        {
+            Material.SetColor(_propMap[prop], value);
+        }
+
         public void SetTexture(TProp prop, Texture value)
         {
             Material.SetTexture(_propMap[prop], value);

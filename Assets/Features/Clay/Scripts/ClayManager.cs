@@ -9,6 +9,7 @@ namespace Features.Clay.Scripts
         [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
         [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
         [SerializeField] private ClayForce.Desc clayForceDesc;
+        [SerializeField] private bool debugDraw = true;
 
         private ClayForce _clayForce;
         private ClayCompute _compute;
@@ -36,8 +37,11 @@ namespace Features.Clay.Scripts
             _compute.SetObjectForces(_clayForce.GetActiveForces(), _clayForce.GetActiveForceCount());
             _compute.Tick();
 
-            _particleRenderer.Draw();
-            _gridVelRenderer.Draw();
+            if (debugDraw)
+            {
+                _particleRenderer.Draw();
+                _gridVelRenderer.Draw();
+            }
         }
 
         private void OnDestroy()

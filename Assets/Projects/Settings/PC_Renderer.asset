@@ -14,9 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
   m_Active: 1
   radius: 0.05
-  sigmaSpace: 5
+  sigmaSpace: 20
   sigmaDepth: 0.01
   kernelRadius: 7
+  lightDir:
+    x: 1
+    y: 1
+    z: -1
+  lightColor: {r: 1, g: 1, b: 1, a: 1}
+  clayColor: {r: 0.8, g: 0.4, b: 0.3, a: 1}
+  sssStrength: 2
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

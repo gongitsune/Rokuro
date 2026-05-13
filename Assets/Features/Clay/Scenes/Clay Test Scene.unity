@@ -474,6 +474,7 @@ MonoBehaviour:
     maxObjectsDetected: 8
     influenceRadius: 0.1
     pushStrength: 100
+  debugDraw: 0
 --- !u!1 &323010402
 GameObject:
   m_ObjectHideFlags: 0

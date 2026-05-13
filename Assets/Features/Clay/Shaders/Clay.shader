@@ -9,6 +9,12 @@ Shader "Hidden/Clay"
         sigma_space ("Sigma Space", Float) = 5.0
         sigma_depth ("Sigma Depth", Float) = 0.01
         kernel_radius ("Kernel Radius", Int) = 7
+
+        [Header(Shading)]
+        light_dir("Light Direction", Vector) = (1, 1, -1, 0)
+        light_color("Light Color", Color) = (1, 1, 1, 1)
+        clay_color("Clay Color", Color) = (0.8, 0.7, 0.6, 1)
+        sss_strength("SSS Strength", Float) = 2.0
     }
     SubShader
     {
@@ -30,11 +36,18 @@ Shader "Hidden/Clay"
             float sigma_depth;
             int kernel_radius;
 
-            float4x4 matrix_v;
-            float4x4 matrix_p;
+            float4 light_dir;
+            float4 light_color;
+            float4 clay_color;
+            float sss_strength;
+
+            // float4x4 matrix_v;
+            // float4x4 matrix_p;
+            // float4x4 matrix_inv_p;
         CBUFFER_END
 
         StructuredBuffer<float3> particle_pos;
+        Texture2D _NormalRT;
 
         float gaussian_space(float dist, float sigma)
         {
@@ -115,15 +128,14 @@ Shader "Hidden/Clay"
                 float3 world_center = particle_pos[pid];
 
                 // ビュー空間に変換
-                float3 view_center = mul(matrix_v, float4(world_center, 1.0)).xyz;
+                float3 view_center = mul(UNITY_MATRIX_V, float4(world_center, 1.0)).xyz;
 
                 // ビュー空間でオフセット（ビルボード展開）
                 float2 offset = quad[corner] * radius;
                 float3 view_pos = view_center + float3(offset, 0.0);
-                view_pos.y *= -1.0; // 上下反転（Unityのスクリーン座標系に合わせる）
 
                 varyings OUT;
-                OUT.clip_pos = mul(matrix_p, float4(view_pos, 1.0));
+                OUT.clip_pos = mul(UNITY_MATRIX_P, float4(view_pos, 1.0));
                 OUT.local_uv = quad[corner];
                 OUT.view_center = view_center;
                 return OUT;
@@ -139,7 +151,7 @@ Shader "Hidden/Clay"
                 float3 sphere_view_pos = IN.view_center + float3(0.0, 0.0, -z_offset);
 
                 // クリップ空間に変換してデプスを書き込む
-                float4 clip_pos = mul(matrix_p, float4(sphere_view_pos, 1.0));
+                float4 clip_pos = mul(UNITY_MATRIX_P, float4(sphere_view_pos, 1.0));
                 return clip_pos.z / clip_pos.w;
             }
             ENDHLSL
@@ -154,10 +166,8 @@ Shader "Hidden/Clay"
 
             Name "BilateralH"
 
-            Cull Off
-            ZWrite On
-            ColorMask 0
             ZTest Always
+            ColorMask 0
 
             HLSLPROGRAM
             #pragma vertex   Vert
@@ -182,9 +192,7 @@ Shader "Hidden/Clay"
 
             Name "BilateralV"
 
-            ZWrite Off
             ZTest Always
-            Cull Off
             ColorMask 0
 
             HLSLPROGRAM
@@ -197,6 +205,131 @@ Shader "Hidden/Clay"
                 if (center_depth >= 1.0) return 1.0;
 
                 return bilateral_sample(i.texcoord, float2(0, 1), center_depth);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Reconstruct Normal From Depth"
+
+            ZTest Always
+
+            HLSLPROGRAM
+            #pragma vertex   Vert
+            #pragma fragment frag
+
+            // デプスからビュー空間位置を復元
+            float3 reconstruct_view_pos(float2 uv, float depth, float4x4 inv_p)
+            {
+                float4 clip_pos = float4(uv * 2.0 - 1.0, depth, 1.0);
+                #if UNITY_UV_STARTS_AT_TOP
+                clip_pos.y = -clip_pos.y;
+                #endif
+                float4 view_pos = mul(inv_p, clip_pos);
+                return view_pos.xyz / view_pos.w;
+            }
+
+            float3 reconstruct_normal(TEXTURE2D(depthTex), SamplerState smp,
+                                      float2 uv, float4 texel_size, float4x4 inv_p)
+            {
+                float2 duv = texel_size.xy;
+
+                float dc = SAMPLE_TEXTURE2D_LOD(depthTex, smp, uv, 0).r;
+                float dr = SAMPLE_TEXTURE2D_LOD(depthTex, smp, uv + float2(duv.x, 0), 0).r;
+                float du = SAMPLE_TEXTURE2D_LOD(depthTex, smp, uv + float2(0, duv.y), 0).r;
+
+                // パーティクルがない領域はスキップ
+                if (dc >= 1.0) return float3(0, 0, 0);
+
+                float3 pos_c = reconstruct_view_pos(uv, dc, inv_p);
+                float3 pos_r = reconstruct_view_pos(uv + float2(duv.x, 0), dr, inv_p);
+                float3 pos_u = reconstruct_view_pos(uv + float2(0, duv.y), du, inv_p);
+
+                float3 dpdx = pos_r - pos_c;
+                float3 dpdy = pos_u - pos_c;
+
+                return normalize(cross(dpdx, dpdy));
+            }
+
+            float4 frag(Varyings input) : SV_Target
+            {
+                float3 normal = reconstruct_normal(
+                    _BlitTexture, sampler_PointClamp,
+                    input.texcoord,
+                    _BlitTexture_TexelSize,
+                    UNITY_MATRIX_I_P
+                );
+                // normal.z *= -1.0; // ビュー空間のZはカメラからの距離なので反転
+
+                if (length(normal) < 0.5) return float4(0, 0, 0, 0);
+
+                return float4(normal, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex   Vert
+            #pragma fragment frag
+
+            // Oren-Nayar近似
+            float oren_nayar(float3 n, float3 l, float3 v, float roughness)
+            {
+                float n_dot_l = saturate(dot(n, l));
+                float n_dot_v = saturate(dot(n, v));
+
+                float sigma2 = roughness * roughness;
+                float a = 1.0 - 0.5 * sigma2 / (sigma2 + 0.33);
+                float b = 0.45 * sigma2 / (sigma2 + 0.09);
+
+                float theta_i = acos(n_dot_l);
+                float theta_r = acos(n_dot_v);
+                float alpha = max(theta_i, theta_r);
+                float beta = min(theta_i, theta_r);
+
+                return n_dot_l * (a + b * max(0.0, cos(theta_i - theta_r)) * sin(alpha) * tan(beta));
+            }
+
+            float4 frag(Varyings input) : SV_Target
+            {
+                float2 uv = input.texcoord;
+
+                // デプスで背景判定
+                float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, uv, 0).r;
+                // Reversed-Zの場合は条件を逆にする
+                #if defined(UNITY_REVERSED_Z)
+                if (depth <= 0.0) discard;
+                #else
+                if (depth >= 1.0) discard;
+                #endif
+
+                // 法線復元
+                // float2 nxyz = SAMPLE_TEXTURE2D_LOD(_NormalRT, sampler_PointClamp, uv, 0).rgz;
+                float3 n = normalize(SAMPLE_TEXTURE2D_LOD(_NormalRT, sampler_PointClamp, uv, 0).rgb);
+
+                // return float4(n, 1.0);
+
+                // ライト・視線方向をビュー空間に変換
+                float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, light_dir.xyz));
+                float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
+
+                // Oren-Nayar Diffuse
+                float diffuse = oren_nayar(n, l, v, 0.9);
+                float3 color = clay_color.rgb * light_color.rgb * diffuse;
+
+                // SSS近似（法線とライトが逆向きの部分を少し明るく）
+                float sss = exp(-max(0.0, dot(n, l)) * sss_strength) * 0.3;
+                color += clay_color.rgb * light_color.rgb * sss;
+
+                // 微量Specular（しっとり感）
+                float3 h = normalize(l + v);
+                float spec = pow(saturate(dot(n, h)), 4.0) * 0.05;
+                color += light_color.rgb * spec;
+
+                return float4(color, 1.0);
             }
             ENDHLSL
         }
