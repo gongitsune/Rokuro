@@ -91,7 +91,8 @@ namespace Features.Clay.Scripts
         {
             var particleThread = new uint3((uint)_desc.particleCount, 1, 1);
 
-            for (var i = 0; i < _desc.iter; i++)
+            var substep = math.min(_desc.maxIter, math.ceil(Time.deltaTime / _desc.dt));
+            for (var i = 0; i < substep; i++)
             {
                 _computeShader.Dispatch(Kernels.clear_grid, (uint)_desc.gridResolution);
                 _computeShader.Dispatch(Kernels.particle_to_grid, particleThread);
@@ -137,7 +138,7 @@ namespace Features.Clay.Scripts
             [Title("Common params")] public int particleCount = 18000;
             public int gridResolution = 64;
             public float dt = 2e-4f;
-            public int iter = 10;
+            public int maxIter = 10;
             public float particleRho = 1;
             public float youngModulus = 700;
             public float nu = 0.2f;

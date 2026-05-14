@@ -19,8 +19,6 @@ namespace Features.Clay.Scripts
 
         private void Start()
         {
-            Application.targetFrameRate = 60;
-
             _compute = new ClayCompute(computeDesc);
             _renderer = new ClayRenderer(rendererDesc, _compute);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);

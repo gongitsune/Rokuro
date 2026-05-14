@@ -444,8 +444,8 @@ MonoBehaviour:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
     particleCount: 32000
     gridResolution: 64
-    dt: 0.0002
-    iter: 100
+    dt: 0.0004
+    maxIter: 20
     particleRho: 1
     youngModulus: 700
     nu: 0.2
