@@ -226,7 +226,7 @@ Transform:
   m_GameObject: {fileID: 11847153}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.031, y: 0, z: 0}
+  m_LocalPosition: {x: 1, y: 0, z: 0}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -456,8 +456,8 @@ MonoBehaviour:
     cylinderRadius: 0.25
     cylinderHeight: 0.5
     frictionAngleDeg: 15
-    dpCohesion: 14
-    dpHardening: 0.8
+    dpCohesion: 38
+    dpHardening: 1
     damping: 0.99
   rendererDesc:
     renderFeature: {fileID: -1703337350216040766, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}

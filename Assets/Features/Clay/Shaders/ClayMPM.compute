@@ -245,7 +245,6 @@ void grid_update(uint3 id : SV_DispatchThreadID)
     if (weight_sum <= 0.0) return;
 
     float3 grid_pos = float3(id) * dx;
-
     float3 g_v = get_grid_v(id) / weight_sum;
     g_v += dt * gravity.xyz;
 
@@ -266,26 +265,10 @@ void grid_update(uint3 id : SV_DispatchThreadID)
 
     int3 id_int = int3(id);
 
-    // 地面についてる奴らは回転する
-    if (id_int.y < 3 && g_v.y < 0)
-    {
-        float2 radial = grid_pos.xz - float2(0.5, 0.5);
-        float radius = length(radial);
-
-        if (radius > 1e-6)
-        {
-            float2 tangent = float2(-radial.y, radial.x) / radius;
-            float wheel_angular_speed = 4.0 / dt;
-            g_v.xz += tangent * (wheel_angular_speed * radius) * dt;
-        }
-
-        g_v.y = 0;
-    }
-
     // 境界
     if (id_int.x < 3 && g_v.x < 0) g_v.x = 0;
     if (id_int.x > n_grid - 3 && g_v.x > 0) g_v.x = 0;
-    // if (id_int.y < 3 && g_v.y < 0) g_v = 0; // 地面についてるやつは固定
+    if (id_int.y < 3 && g_v.y < 0) g_v = 0; // 地面についてるやつは固定
     if (id_int.y > n_grid - 3 && g_v.y > 0) g_v.y = 0;
     if (id_int.z < 3 && g_v.z < 0) g_v.z = 0;
     if (id_int.z > n_grid - 3 && g_v.z > 0) g_v.z = 0;
