@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
   m_Active: 1
-  radius: 0.05
+  radius: 0.04
   maxFilterSize: 100
   blueDepthScale: 10
   blurFilterSize: 20

@@ -425,7 +425,9 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 586472419}
+  - {fileID: 323010404}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &286983443
@@ -442,21 +444,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 32000
-    gridResolution: 64
-    dt: 0.0004
-    maxIter: 20
+    particleCount: 100000
+    gridResolution: 96
+    dt: 0.0003
+    maxIter: 25
     particleRho: 1
-    youngModulus: 100
-    nu: 0.2
+    youngModulus: 200
+    nu: 0.4
     gravity:
       x: 0
       y: -9.81
       z: 0
     cylinderRadius: 0.25
     cylinderHeight: 0.5
-    frictionAngleDeg: 15
-    dpCohesion: 38
+    frictionAngleDeg: 13
+    dpCohesion: 7
     dpHardening: 0.6
     damping: 0.99
   rendererDesc:
@@ -472,7 +474,7 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 1
     maxObjectsDetected: 8
-    influenceRadius: 0.3
+    influenceRadius: 0.174
     pushStrength: 100
   debugDraw: 0
 --- !u!1 &323010402
@@ -571,7 +573,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 286983442}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!114 &323010405
 MonoBehaviour:
@@ -626,19 +628,17 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 586472418}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 286983442}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 266137088}
-  - {fileID: 323010404}
-  - {fileID: 586472419}
   - {fileID: 286983442}
   - {fileID: 11847157}
