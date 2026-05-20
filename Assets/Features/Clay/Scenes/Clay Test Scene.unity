@@ -447,7 +447,7 @@ MonoBehaviour:
     dt: 0.0004
     maxIter: 20
     particleRho: 1
-    youngModulus: 700
+    youngModulus: 100
     nu: 0.2
     gravity:
       x: 0
@@ -457,7 +457,7 @@ MonoBehaviour:
     cylinderHeight: 0.5
     frictionAngleDeg: 15
     dpCohesion: 38
-    dpHardening: 1
+    dpHardening: 0.6
     damping: 0.99
   rendererDesc:
     renderFeature: {fileID: -1703337350216040766, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
