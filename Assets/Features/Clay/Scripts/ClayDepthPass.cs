@@ -86,7 +86,8 @@ namespace Features.Clay.Scripts
                            depthTempRT,
                            _mat.Material,
                            1,
-                           blurHProp
+                           blurHProp,
+                           geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
                        ),
                        "Bilateral Horizontal Pass",
                        true
@@ -101,7 +102,8 @@ namespace Features.Clay.Scripts
                            resourceData.activeDepthTexture,
                            _mat.Material,
                            1,
-                           blurVProp
+                           blurVProp,
+                           geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
                        ),
                        "Bilateral Vertical Pass",
                        true
