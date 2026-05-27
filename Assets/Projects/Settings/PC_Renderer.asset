@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d3b9e27d2a46c2af9cb7ebd6d5b985, type: 3}
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
-  m_Active: 1
+  m_Active: 0
   radius: 0.04
   maxFilterSize: 100
   blueDepthScale: 10
