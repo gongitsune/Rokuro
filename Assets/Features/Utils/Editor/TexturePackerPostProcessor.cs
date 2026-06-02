@@ -16,7 +16,9 @@ namespace Features.Utils.Editor
         private const string SuffixRoughness = "_roughness";
         private const string SuffixMetallic = "_metalness";
         private const string SuffixAo = "_ambientocclusion";
-        private const string SuffixOutput = "_mask";
+        private const string SuffixDisplacement = "_displacement";
+        private const string SuffixMask = "_mask";
+        private const string SuffixNormal = "_normal";
 
         /// <summary>
         ///     インポート後処理、3ファイル揃ったらパッキング実行
@@ -34,6 +36,7 @@ namespace Features.Utils.Editor
 
                 var dir = Path.GetDirectoryName(path);
                 TryPackTextures(dir, baseName);
+                TryGenerateNormal(dir, baseName);
             }
         }
 
@@ -120,9 +123,11 @@ namespace Features.Utils.Editor
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(output);
 
-            var outputPath = Path.Combine(dir, baseName + SuffixOutput + ".png");
+            var outputPath = Path.Combine(dir, baseName + SuffixMask + ".png");
             File.WriteAllBytes(outputPath, tex.EncodeToPNG());
+
             Object.DestroyImmediate(tex);
+            CoreUtils.Destroy(mat.Material);
 
             // AssetDatabase に登録してインポート設定を適用
             var assetOutputPath = outputPath.Replace('\\', '/');
@@ -132,9 +137,92 @@ namespace Features.Utils.Editor
             Debug.Log($"[TexturePacker] パック完了: {assetOutputPath}");
         }
 
-        // -------------------------------------------------------------------
-        // 出力テクスチャのインポート設定（Mask Map 向け）
-        // -------------------------------------------------------------------
+        /// <summary>
+        ///     DisplacementマップからNormalマップを生成する
+        /// </summary>
+        /// <param name="dir">ディレクトリパス</param>
+        /// <param name="baseName">テクスチャのベースネーム</param>
+        private static void TryGenerateNormal(string dir, string baseName)
+        {
+            var dispPath = FindFile(dir, baseName + SuffixDisplacement);
+            if (dispPath == null) return;
+
+            var dispTex = LoadLinearTexture(dispPath);
+            if (dispTex == null)
+            {
+                Debug.LogWarning($"[TexturePacker] Displacement 読み込み失敗: {baseName}");
+                return;
+            }
+
+            Debug.Log($"[TexturePacker] {baseName} Normal生成開始...");
+
+            var width = dispTex.width;
+            var height = dispTex.height;
+
+            Debug.Log($"[TexturePacker] Displacementサイズ: {width}x{height}, {dispTex.name}");
+
+            var mat = new MaterialWrapper<Uniforms>(
+                CoreUtils.CreateEngineMaterial("Hidden/TexturePacking")
+            );
+            mat.SetTexture(Uniforms._Displacement, dispTex);
+            mat.SetFloat(Uniforms.normal_strength, 2.0f);
+            mat.SetVector(Uniforms.texel_size, new Vector4(1f / width, 1f / height, 0f, 0f));
+
+            var output = RenderTexture.GetTemporary(
+                width, height, 0,
+                RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear
+            );
+
+            var cmd = CommandBufferPool.Get("TexturePacker_Normal");
+            cmd.SetRenderTarget(output);
+            cmd.ClearRenderTarget(false, true, Color.clear);
+            cmd.DrawProcedural(
+                Matrix4x4.identity, mat.Material,
+                1,
+                MeshTopology.Triangles, 3
+            );
+            Graphics.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
+
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+            var prev = RenderTexture.active;
+            RenderTexture.active = output;
+            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            tex.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(output);
+
+            var outputPath = Path.Combine(dir, baseName + SuffixNormal + ".png").Replace('\\', '/');
+            File.WriteAllBytes(outputPath, tex.EncodeToPNG());
+
+            Object.DestroyImmediate(tex);
+            CoreUtils.Destroy(mat.Material);
+
+            AssetDatabase.ImportAsset(outputPath, ImportAssetOptions.ForceUpdate);
+            ConfigureNormalTexture(outputPath);
+
+            Debug.Log($"[TexturePacker] Normal生成完了: {outputPath}");
+        }
+
+        private static void ConfigureNormalTexture(string assetPath)
+        {
+            var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (importer == null) return;
+
+            importer.textureType = TextureImporterType.NormalMap;
+            importer.sRGBTexture = false;
+            importer.mipmapEnabled = true;
+            importer.isReadable = false;
+
+            var settings = importer.GetDefaultPlatformTextureSettings();
+            settings.textureCompression = TextureImporterCompression.Compressed;
+            settings.format = TextureImporterFormat.Automatic;
+            settings.overridden = false;
+            importer.SetPlatformTextureSettings(settings);
+
+            importer.SaveAndReimport();
+        }
+
         private static void ConfigureMaskTexture(string assetPath)
         {
             var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
@@ -150,8 +238,8 @@ namespace Features.Utils.Editor
 
             // プラットフォーム共通設定
             var settings = importer.GetDefaultPlatformTextureSettings();
-            settings.format = TextureImporterFormat.RGBA32;
-            settings.overridden = true;
+            settings.format = TextureImporterFormat.Automatic;
+            settings.overridden = false;
             importer.SetPlatformTextureSettings(settings);
 
             importer.SaveAndReimport();
@@ -168,7 +256,7 @@ namespace Features.Utils.Editor
         {
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(path).ToLower();
 
-            return (from suffix in new[] { SuffixRoughness, SuffixMetallic, SuffixAo }
+            return (from suffix in new[] { SuffixRoughness, SuffixMetallic, SuffixAo, SuffixDisplacement }
                 where fileNameWithoutExt.EndsWith(suffix)
                 let original = Path.GetFileNameWithoutExtension(path)
                 select original[..^suffix.Length]).FirstOrDefault();
@@ -214,7 +302,10 @@ namespace Features.Utils.Editor
         {
             _Roughness,
             _Metallic,
-            _Ao
+            _Ao,
+            _Displacement,
+            normal_strength,
+            texel_size
         }
     }
 }
