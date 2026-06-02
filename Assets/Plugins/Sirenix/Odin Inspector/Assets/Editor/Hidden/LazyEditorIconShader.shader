@@ -17,12 +17,14 @@ Shader "Hidden/Sirenix/Editor/GUIIcon"
             #pragma fragment frag
             #include "UnityCG.cginc"
 
-            struct appdata {
+            struct appdata
+            {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f {
+            struct varying
+            {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
@@ -30,14 +32,16 @@ Shader "Hidden/Sirenix/Editor/GUIIcon"
             sampler2D _MainTex;
             float4 _Color;
 
-            v2f vert(appdata v) {
-                v2f o;
+            varying vert(appdata v)
+            {
+                varying o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 return o;
             }
 
-            fixed4 frag(v2f i) : SV_Target {
+            fixed4 frag(varying i) : SV_Target
+            {
                 // drop shadow:
                 // float texelSize = 1.0 / 34.0;
                 // float2 shadowUv = clamp(i.uv + float2(-texelSize, texelSize * 2), float2(0, 0), float2(1, 1));

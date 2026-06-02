@@ -3,7 +3,97 @@ guid: 2281da7e5d4d8fa44893b116e15ba61c
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bottom base
+    second: {fileID: 2100000, guid: 9f32e2bb1a66c4d09bce795a7d9acdc7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bucket
+    second: {fileID: 2100000, guid: 470d2305bb84b4f6b8b593bb2bae92c2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cushion
+    second: {fileID: 2100000, guid: 60ac659d6ee7843389be6851ea938e8a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: floor
+    second: {fileID: 2100000, guid: 59d05bf00e2a44e7b9634e730c3ee503, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: fluorescent.light
+    second: {fileID: 2100000, guid: e8c94e2adc26045bf90fd7956d53e0d4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lamp.glass
+    second: {fileID: 2100000, guid: bc2a60d6e974b4b81893bbc2974c5506, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lamp.porcelain
+    second: {fileID: 2100000, guid: b38caca9d24884fba8049ca3333e80c5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lamp.rope
+    second: {fileID: 2100000, guid: ba224659c280841af81bca315a5c084d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: poll
+    second: {fileID: 2100000, guid: 956c2e790bd1344daa89b49f230d56b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: poster.kanazawa
+    second: {fileID: 2100000, guid: d0ecd0bb65d814199bd29a8208031e22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: poster.miyazaki
+    second: {fileID: 2100000, guid: afd4cea6a381647e294d8de64f0da07c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: poster.tin
+    second: {fileID: 2100000, guid: df6750699020b4b3bbd2c8490e0a4004, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pottery
+    second: {fileID: 2100000, guid: ff38f217510c446ec9d15d195a8d2968, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: roof.plane
+    second: {fileID: 2100000, guid: 92a552d09d2cb46b8aa5c1f41dde8e45, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: top base
+    second: {fileID: 2100000, guid: 5777c4e0e642144e2b4bebf9dfc9fa06, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: wall
+    second: {fileID: 2100000, guid: d05e8efa5aaf54ad1aca348e8e102836, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: wheel
+    second: {fileID: 2100000, guid: caae35a5a6a8149259b3054453b6a011, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: window.glass
+    second: {fileID: 2100000, guid: 88d5eb5ad7d214e3cb3e0eb7e2f6244d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -46,7 +136,7 @@ ModelImporter:
     nodeNameCollisionStrategy: 1
     fileIdsGeneration: 2
     swapUVChannels: 0
-    generateSecondaryUV: 0
+    generateSecondaryUV: 1
     useFileUnits: 1
     keepQuads: 0
     weldVertices: 1
@@ -79,7 +169,7 @@ ModelImporter:
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
   referencedClips: []
-  importAnimation: 1
+  importAnimation: 0
   humanDescription:
     serializedVersion: 3
     human: []
@@ -94,11 +184,11 @@ ModelImporter:
     globalScale: 1
     rootMotionBoneName: 
     hasTranslationDoF: 0
-    hasExtraRoot: 0
+    hasExtraRoot: 1
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 0
   humanoidOversampling: 1
   avatarSetup: 0
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
