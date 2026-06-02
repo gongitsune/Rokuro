@@ -77,6 +77,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: table.metal
+    second: {fileID: 2100000, guid: 59db067e72dda4c949cd30655a5041c2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: top base
     second: {fileID: 2100000, guid: 5777c4e0e642144e2b4bebf9dfc9fa06, type: 2}
   - first:
