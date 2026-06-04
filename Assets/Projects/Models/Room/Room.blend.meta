@@ -82,6 +82,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: table.top
+    second: {fileID: 2100000, guid: f413ed20470a74b10872de88322fbb87, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: top base
     second: {fileID: 2100000, guid: 5777c4e0e642144e2b4bebf9dfc9fa06, type: 2}
   - first:
