@@ -122,8 +122,9 @@ Shader "Hidden/Clay"
 
             float frag(Varyings input) : SV_Depth
             {
-                float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, input.texcoord, 0).r;
-                if (depth >= 1.0) return 1.0;
+                int2 iuv = int2(input.texcoord * _BlitTexture_TexelSize.zw);
+                float depth = LOAD_TEXTURE2D(_BlitTexture, iuv).r;
+                if (depth >= 1.0 || depth <= 0.0) return depth;
 
                 int filter_size = min(max_filter_size, ceil(projected_particle_constant / depth));
 
@@ -137,16 +138,13 @@ Shader "Hidden/Clay"
 
                 for (int x = -filter_size; x <= filter_size; ++x)
                 {
-                    float2 coords = float2(x, x);
-                    float sampled_depth = SAMPLE_TEXTURE2D_LOD(
+                    float sampled_depth = LOAD_TEXTURE2D(
                         _BlitTexture,
-                        sampler_PointRepeat,
-                        input.texcoord + coords * blur_dir,
-                        0
+                        iuv + x * blur_dir.xy
                     ).r;
                     sampled_depth = abs(sampled_depth);
 
-                    float rr = dot(coords, coords);
+                    float rr = 2.0 * x * x;
                     float w = exp(-rr / two_sigma);
 
                     float r_depth = sampled_depth - depth;
@@ -221,8 +219,9 @@ Shader "Hidden/Clay"
                 float3 normal = -normalize(cross(ddx, ddy));
 
                 // ライト・視線方向をビュー空間に変換
-                float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, light_dir.xyz));
+                float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, _MainLightPosition.xyz));
                 float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
+                float3 d = max(0.0, dot(normal, l));
 
                 // Oren-Nayar Diffuse
                 float diffuse = oren_nayar(normal, l, v, 0.9);

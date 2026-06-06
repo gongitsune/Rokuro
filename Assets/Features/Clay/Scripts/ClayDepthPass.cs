@@ -47,9 +47,13 @@ namespace Features.Clay.Scripts
             );
 
             var blurHProp = new MaterialPropertyBlock();
-            blurHProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir), new Vector4(1, 0, 0, 0));
+            blurHProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir),
+                new Vector4(1, 0, 0, 0)
+            );
             var blurVProp = new MaterialPropertyBlock();
-            blurVProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir), new Vector4(0, 1, 0, 0));
+            blurVProp.SetVector(_mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir),
+                new Vector4(0, 1, 0, 0)
+            );
 
             using (var builder = renderGraph.AddRasterRenderPass(
                        "Clay Depth Pass",
@@ -87,7 +91,7 @@ namespace Features.Clay.Scripts
                            _mat.Material,
                            1,
                            blurHProp,
-                           geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
+                           RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
                        ),
                        "Bilateral Horizontal Pass",
                        true
@@ -103,7 +107,7 @@ namespace Features.Clay.Scripts
                            _mat.Material,
                            1,
                            blurVProp,
-                           geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
+                           RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
                        ),
                        "Bilateral Vertical Pass",
                        true

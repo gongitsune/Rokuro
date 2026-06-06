@@ -16,7 +16,7 @@ MonoBehaviour:
   radius: 0.04
   maxFilterSize: 100
   blueDepthScale: 10
-  blurFilterSize: 20
+  blurFilterSize: 12
   lightDir:
     x: 1
     y: 1
