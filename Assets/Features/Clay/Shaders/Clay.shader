@@ -35,17 +35,11 @@ Shader "Hidden/Clay"
 
         Pass
         {
-            Tags
-            {
-                "LightMode"="DepthOnly"
-            }
-
             Name "Particle Depth"
 
             Cull Off
             ZTest LEqual
             ZWrite On
-            ColorMask 0
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -87,7 +81,7 @@ Shader "Hidden/Clay"
                 return OUT;
             }
 
-            float frag(varyings IN) : SV_Depth
+            float4 frag(varyings IN, out float depth : SV_Depth) : SV_Target
             {
                 float2 normal_xy = IN.local_uv * 2.0 - 1.0;
                 float r2 = dot(normal_xy, normal_xy);
@@ -99,7 +93,9 @@ Shader "Hidden/Clay"
                 float r = radius * 0.5;
                 float4 view_pos = float4(IN.view_pos + normal * r, 1.0);
                 float4 clip_pos = mul(UNITY_MATRIX_P, view_pos);
-                return clip_pos.z / clip_pos.w;
+                depth = clip_pos.z / clip_pos.w;
+
+                return view_pos;
             }
             ENDHLSL
         }
@@ -217,7 +213,8 @@ Shader "Hidden/Clay"
                 if (depth >= 1.0) discard;
                 #endif
 
-                return float4(depth, depth, depth, 1.0);
+                float4 pos = SAMPLE_TEXTURE2D_LOD(world_pos_tex, sampler_PointClamp, IN.texcoord, 0);
+                return float4(pos);
 
                 float3 view_pos = compute_view_pos_from_depth(IN.texcoord, depth);
                 float3 world_pos = ComputeWorldSpacePosition(IN.texcoord, .5, UNITY_MATRIX_I_VP);

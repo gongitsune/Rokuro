@@ -2,6 +2,7 @@ using System;
 using Features.Utils.Scripts;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
@@ -46,6 +47,7 @@ namespace Features.Clay.Scripts
             worldPosDesc.name = "World Position RT";
             worldPosDesc.msaaSamples = MSAASamples.None;
             worldPosDesc.clearBuffer = true;
+            worldPosDesc.format = GraphicsFormat.R16G16B16A16_UNorm;
             var worldPosRT = renderGraph.CreateTexture(worldPosDesc);
 
             _mat.SetFloat(
@@ -75,8 +77,8 @@ namespace Features.Clay.Scripts
                 passData.ParticleCount = _particleCount;
 
                 builder.AllowPassCulling(false);
-                builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
                 builder.SetRenderAttachment(worldPosRT, 0);
+                builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
 
                 builder.SetRenderFunc<DepthPassData>(static (data, ctx) =>
                 {
@@ -150,6 +152,10 @@ namespace Features.Clay.Scripts
 
                     using (new ProfilingScope(ctx.cmd, new ProfilingSampler(ShadingProfilerTag)))
                     {
+                        data.PropBlock.SetTexture(
+                            data.Mat.GetPropertyId(ClayRenderFeature.Uniforms.world_pos_tex),
+                            data.WorldPosTex
+                        );
                         data.PropBlock.SetTexture(
                             data.Mat.GetPropertyId(ClayRenderFeature.Uniforms._BlitTexture),
                             data.DepthTex
