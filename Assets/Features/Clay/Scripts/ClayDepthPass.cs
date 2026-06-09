@@ -2,7 +2,6 @@ using System;
 using Features.Utils.Scripts;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
@@ -43,13 +42,6 @@ namespace Features.Clay.Scripts
             depthDesc.clearBuffer = true;
             var depthTempRT = renderGraph.CreateTexture(depthDesc);
 
-            var worldPosDesc = renderGraph.GetTextureDesc(resourceData.activeColorTexture);
-            worldPosDesc.name = "World Position RT";
-            worldPosDesc.msaaSamples = MSAASamples.None;
-            worldPosDesc.clearBuffer = true;
-            worldPosDesc.format = GraphicsFormat.R16G16B16A16_UNorm;
-            var worldPosRT = renderGraph.CreateTexture(worldPosDesc);
-
             _mat.SetFloat(
                 ClayRenderFeature.Uniforms.projected_particle_constant,
                 _calcProjected(depthDesc.height, math.radians(cam.fieldOfView))
@@ -77,7 +69,6 @@ namespace Features.Clay.Scripts
                 passData.ParticleCount = _particleCount;
 
                 builder.AllowPassCulling(false);
-                builder.SetRenderAttachment(worldPosRT, 0);
                 builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
 
                 builder.SetRenderFunc<DepthPassData>(static (data, ctx) =>
@@ -129,48 +120,18 @@ namespace Features.Clay.Scripts
                 builder.AllowPassCulling(false);
             }
 
-            using (var builder = renderGraph.AddRasterRenderPass(
+            using (var builder = renderGraph.AddBlitPass(
+                       new RenderGraphUtils.BlitMaterialParameters(
+                           resourceData.activeDepthTexture,
+                           resourceData.activeColorTexture,
+                           _mat.Material,
+                           2
+                       ),
                        "Clay Shading Pass",
-                       out ShadingPassData passData,
-                       new ProfilingSampler(ShadingProfilerTag)
+                       true
                    ))
             {
-                builder.SetRenderAttachment(resourceData.activeColorTexture, 0);
-                builder.UseTexture(resourceData.activeDepthTexture);
-                builder.UseTexture(worldPosRT);
                 builder.AllowPassCulling(false);
-
-                passData.Mat = _mat;
-                passData.ParticleCount = _particleCount;
-                passData.DepthTex = resourceData.activeDepthTexture;
-                passData.WorldPosTex = worldPosRT;
-                passData.PropBlock = shadingProp;
-
-                builder.SetRenderFunc<ShadingPassData>(static (data, ctx) =>
-                {
-                    if (data.ParticleCount[0] <= 0) return;
-
-                    using (new ProfilingScope(ctx.cmd, new ProfilingSampler(ShadingProfilerTag)))
-                    {
-                        data.PropBlock.SetTexture(
-                            data.Mat.GetPropertyId(ClayRenderFeature.Uniforms.world_pos_tex),
-                            data.WorldPosTex
-                        );
-                        data.PropBlock.SetTexture(
-                            data.Mat.GetPropertyId(ClayRenderFeature.Uniforms._BlitTexture),
-                            data.DepthTex
-                        );
-                        data.PropBlock.SetVector(
-                            data.Mat.GetPropertyId(ClayRenderFeature.Uniforms._BlitScaleBias),
-                            new Vector4(1, 1, 0, 0)
-                        );
-                        ctx.cmd.DrawProcedural(
-                            Matrix4x4.identity, data.Mat.Material, 2,
-                            MeshTopology.Triangles, 3, 1,
-                            data.PropBlock
-                        );
-                    }
-                });
             }
         }
 

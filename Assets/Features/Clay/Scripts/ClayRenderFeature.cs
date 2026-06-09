@@ -23,14 +23,8 @@ namespace Features.Clay.Scripts
             blur_dir,
             clay_main_tex,
             clay_normal_tex,
-            world_pos_tex,
-            _BlitTexture,
-            _BlitScaleBias,
 
-            light_dir,
-            light_color,
-            clay_color,
-            sss_strength
+            clay_color
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
@@ -39,10 +33,7 @@ namespace Features.Clay.Scripts
         [SerializeField] private float blueDepthScale = 10;
         [SerializeField] private float blurFilterSize = 12;
 
-        [Title("Shading")] [SerializeField] private float3 lightDir = new(1f, 1f, -1f);
-        [SerializeField] private Color lightColor = Color.white;
-        [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
-        [SerializeField] private float sssStrength = 2.0f;
+        [Title("Shading")] [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private Texture2D clayMainTex;
         [SerializeField] private Texture2D clayNormalTex;
 
@@ -69,10 +60,7 @@ namespace Features.Clay.Scripts
             _mat.SetFloat(Uniforms.radius, radius);
             _mat.SetFloat(Uniforms.depth_threshold, radius * blueDepthScale);
             _mat.SetInt(Uniforms.max_filter_size, maxFilterSize);
-            _mat.SetVector(Uniforms.light_dir, new float4(math.normalize(lightDir), 1));
-            _mat.SetColor(Uniforms.light_color, lightColor);
             _mat.SetColor(Uniforms.clay_color, clayColor);
-            _mat.SetFloat(Uniforms.sss_strength, sssStrength);
             _mat.SetTexture(Uniforms.clay_main_tex, clayMainTex);
             _mat.SetTexture(Uniforms.clay_normal_tex, clayNormalTex);
 

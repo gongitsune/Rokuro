@@ -22,15 +22,11 @@ Shader "Hidden/Clay"
             int max_filter_size;
             float4 blur_dir;
 
-            float4 light_dir;
-            float4 light_color;
             float4 clay_color;
-            float sss_strength;
         CBUFFER_END
 
         StructuredBuffer<float3> particle_pos;
         Texture2D clay_main_tex, clay_normal_tex;
-        Texture2D world_pos_tex;
         ENDHLSL
 
         Pass
@@ -81,7 +77,7 @@ Shader "Hidden/Clay"
                 return OUT;
             }
 
-            float4 frag(varyings IN, out float depth : SV_Depth) : SV_Target
+            float frag(varyings IN) : SV_Depth
             {
                 float2 normal_xy = IN.local_uv * 2.0 - 1.0;
                 float r2 = dot(normal_xy, normal_xy);
@@ -93,9 +89,7 @@ Shader "Hidden/Clay"
                 float r = radius * 0.5;
                 float4 view_pos = float4(IN.view_pos + normal * r, 1.0);
                 float4 clip_pos = mul(UNITY_MATRIX_P, view_pos);
-                depth = clip_pos.z / clip_pos.w;
-
-                return view_pos;
+                return clip_pos.z / clip_pos.w;
             }
             ENDHLSL
         }
@@ -118,8 +112,7 @@ Shader "Hidden/Clay"
 
             float frag(Varyings input) : SV_Depth
             {
-                int2 iuv = int2(input.texcoord * _BlitTexture_TexelSize.zw);
-                float depth = LOAD_TEXTURE2D(_BlitTexture, iuv).r;
+                float depth = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, input.texcoord).r;
                 if (depth >= 1.0 || depth <= 0.0) return depth;
 
                 int filter_size = min(max_filter_size, ceil(projected_particle_constant / depth));
@@ -134,9 +127,11 @@ Shader "Hidden/Clay"
 
                 for (int x = -filter_size; x <= filter_size; ++x)
                 {
-                    float sampled_depth = LOAD_TEXTURE2D(
+                    float sampled_depth = SAMPLE_TEXTURE2D_LOD(
                         _BlitTexture,
-                        iuv + x * blur_dir.xy
+                        sampler_LinearClamp,
+                        input.texcoord + x * blur_dir.xy * _BlitTexture_TexelSize.xy,
+                        0
                     ).r;
                     sampled_depth = abs(sampled_depth);
 
@@ -188,7 +183,7 @@ Shader "Hidden/Clay"
 
             float3 get_view_pos_from_texcoord(float2 uv)
             {
-                float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, uv, 0).r;
+                float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, uv, 0).r;
                 return compute_view_pos_from_depth(uv, depth);
             }
 
@@ -204,6 +199,14 @@ Shader "Hidden/Clay"
                 return dir.xz * 0.5 + 0.5;
             }
 
+            float2 dir_to_equirect_uv(float3 dir)
+            {
+                float2 uv;
+                uv.x = atan2(dir.z, dir.x) / (2.0 * PI) + 0.5;
+                uv.y = asin(clamp(dir.y, -1.0, 1.1)) / PI + 0.5;
+                return uv;
+            }
+
             float4 frag(Varyings IN) : SV_Target
             {
                 float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, IN.texcoord, 0).r;
@@ -213,16 +216,8 @@ Shader "Hidden/Clay"
                 if (depth >= 1.0) discard;
                 #endif
 
-                float4 pos = SAMPLE_TEXTURE2D_LOD(world_pos_tex, sampler_PointClamp, IN.texcoord, 0);
-                return float4(pos);
-
                 float3 view_pos = compute_view_pos_from_depth(IN.texcoord, depth);
-                float3 world_pos = ComputeWorldSpacePosition(IN.texcoord, .5, UNITY_MATRIX_I_VP);
-                float3 y = depth;
-                // return float4(y, 1);
-
-                // return float4(frac(world_pos), 1.0);
-
+                
                 float3 ddx = get_view_pos_from_texcoord(IN.texcoord + float2(_BlitTexture_TexelSize.x, 0)) - view_pos;
                 float3 ddy = get_view_pos_from_texcoord(IN.texcoord + float2(0, _BlitTexture_TexelSize.y)) - view_pos;
                 float3 ddx2 = view_pos - get_view_pos_from_texcoord(IN.texcoord + float2(-_BlitTexture_TexelSize.x, 0));
@@ -231,31 +226,41 @@ Shader "Hidden/Clay"
                 ddx = abs(ddx.z) < abs(ddx2.z) ? ddx : ddx2;
                 ddy = abs(ddy.z) < abs(ddy2.z) ? ddy : ddy2;
 
-                float3 normal = -normalize(cross(ddx, ddy));
-                float3 tangent = normalize(ddx);
-                float3 binormal = normalize(cross(normal, tangent));
+                float3 n = -normalize(cross(ddx, ddy));
+                float2 oct_uv = dir_to_equirect_uv(n);
+                float3 albedo = SAMPLE_TEXTURE2D(clay_main_tex, sampler_LinearClamp, oct_uv).rgb;
+                float3 normal_detail = SAMPLE_TEXTURE2D(
+                    clay_normal_tex, sampler_LinearRepeat, oct_uv * 2
+                ).rgb * 2.0 - 1.0;
+                normal_detail = mul((float3x3)UNITY_MATRIX_V, normal_detail);
 
-                // normal = normalize(tangent * normal_map.x + binormal * normal_map.y + normal * normal_map.z);
+                // n = normalize(n + normal_detail * .5); // 法線にディテールを加算
 
                 // ライト・視線方向をビュー空間に変換
                 float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, _MainLightPosition.xyz));
                 float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
-
-                // Oren-Nayar Diffuse
-                float diffuse = oren_nayar(normal, l, v, 0.9);
-                float3 clay_tex_col = SAMPLE_TEXTURE2D(clay_main_tex, sampler_LinearClamp, IN.texcoord).rgb;
-                float3 color = clay_tex_col * light_color.rgb * diffuse;
-
-                // SSS近似（法線とライトが逆向きの部分を少し明るく）
-                float sss = exp(-max(0.0, dot(normal, l)) * sss_strength) * 0.3;
-                color += clay_color.rgb * light_color.rgb * sss;
-
-                // 微量Specular（しっとり感）
                 float3 h = normalize(l + v);
-                float spec = pow(saturate(dot(normal, h)), 4.0) * 0.05;
-                color += light_color.rgb * spec;
 
-                return float4(color, 1.0);
+                float n_dot_l = dot(n, l);
+                float3 diffuse = (n_dot_l * 0.5 + 0.5) * _MainLightColor.rgb;
+                float3 specular = pow(max(0.0, dot(n, h)), 80.0) * _MainLightColor.rgb * .1;
+                return float4(albedo * diffuse + specular, 1.0);
+
+                // // Oren-Nayar Diffuse
+                // float diffuse = oren_nayar(n, l, v, 0.9);
+                // float3 clay_tex_col = SAMPLE_TEXTURE2D(clay_main_tex, sampler_LinearClamp, IN.texcoord).rgb;
+                // float3 color = clay_tex_col * light_color.rgb * diffuse;
+                //
+                // // SSS近似（法線とライトが逆向きの部分を少し明るく）
+                // float sss = exp(-max(0.0, dot(n, l)) * sss_strength) * 0.3;
+                // color += clay_color.rgb * light_color.rgb * sss;
+                //
+                // // 微量Specular（しっとり感）
+                // float3 h = normalize(l + v);
+                // float spec = pow(saturate(dot(n, h)), 4.0) * 0.05;
+                // color += light_color.rgb * spec;
+                //
+                // return float4(color, 1.0);
             }
             ENDHLSL
         }
