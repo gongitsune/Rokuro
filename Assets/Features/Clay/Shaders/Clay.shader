@@ -29,7 +29,8 @@ Shader "Hidden/Clay"
         CBUFFER_END
 
         StructuredBuffer<float3> particle_pos;
-        Texture2D _NormalRT;
+        Texture2D clay_main_tex, clay_normal_tex;
+        Texture2D world_pos_tex;
         ENDHLSL
 
         Pass
@@ -77,7 +78,6 @@ Shader "Hidden/Clay"
 
                 float3 p_pos = particle_pos[pid];
                 float3 view_pos = mul(UNITY_MATRIX_V, float4(p_pos, 1.0)).xyz;
-
                 float4 out_pos = mul(UNITY_MATRIX_P, float4(view_pos + corner, 1.0));
 
                 varyings OUT;
@@ -185,7 +185,6 @@ Shader "Hidden/Clay"
             float3 compute_view_pos_from_depth(float2 uv, float depth)
             {
                 float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
-                // ndc.z = -UNITY_MATRIX_P._22 + UNITY_MATRIX_P._32 / depth; // Reversed-Z対応
 
                 float4 eye_pos = mul(UNITY_MATRIX_I_P, ndc);
                 return eye_pos.xyz / eye_pos.w;
@@ -197,6 +196,18 @@ Shader "Hidden/Clay"
                 return compute_view_pos_from_depth(uv, depth);
             }
 
+            float2 dir_to_oct_uv(float3 dir)
+            {
+                dir /= (abs(dir.x) + abs(dir.y) + abs(dir.z));
+                if (dir.y < 0.0)
+                {
+                    float2 s = float2(dir.x >= 0 ? 1.0 : -1.0,
+                                      dir.z >= 0 ? 1.0 : -1.0);
+                    dir.xz = (1.0 - abs(dir.zx)) * s;
+                }
+                return dir.xz * 0.5 + 0.5;
+            }
+
             float4 frag(Varyings IN) : SV_Target
             {
                 float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, IN.texcoord, 0).r;
@@ -206,7 +217,14 @@ Shader "Hidden/Clay"
                 if (depth >= 1.0) discard;
                 #endif
 
+                return float4(depth, depth, depth, 1.0);
+
                 float3 view_pos = compute_view_pos_from_depth(IN.texcoord, depth);
+                float3 world_pos = ComputeWorldSpacePosition(IN.texcoord, .5, UNITY_MATRIX_I_VP);
+                float3 y = depth;
+                // return float4(y, 1);
+
+                // return float4(frac(world_pos), 1.0);
 
                 float3 ddx = get_view_pos_from_texcoord(IN.texcoord + float2(_BlitTexture_TexelSize.x, 0)) - view_pos;
                 float3 ddy = get_view_pos_from_texcoord(IN.texcoord + float2(0, _BlitTexture_TexelSize.y)) - view_pos;
@@ -217,15 +235,19 @@ Shader "Hidden/Clay"
                 ddy = abs(ddy.z) < abs(ddy2.z) ? ddy : ddy2;
 
                 float3 normal = -normalize(cross(ddx, ddy));
+                float3 tangent = normalize(ddx);
+                float3 binormal = normalize(cross(normal, tangent));
+
+                // normal = normalize(tangent * normal_map.x + binormal * normal_map.y + normal * normal_map.z);
 
                 // ライト・視線方向をビュー空間に変換
                 float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, _MainLightPosition.xyz));
                 float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
-                float3 d = max(0.0, dot(normal, l));
 
                 // Oren-Nayar Diffuse
                 float diffuse = oren_nayar(normal, l, v, 0.9);
-                float3 color = clay_color.rgb * light_color.rgb * diffuse;
+                float3 clay_tex_col = SAMPLE_TEXTURE2D(clay_main_tex, sampler_LinearClamp, IN.texcoord).rgb;
+                float3 color = clay_tex_col * light_color.rgb * diffuse;
 
                 // SSS近似（法線とライトが逆向きの部分を少し明るく）
                 float sss = exp(-max(0.0, dot(normal, l)) * sss_strength) * 0.3;

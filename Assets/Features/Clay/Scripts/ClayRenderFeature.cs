@@ -21,6 +21,11 @@ namespace Features.Clay.Scripts
             depth_threshold,
             max_filter_size,
             blur_dir,
+            clay_main_tex,
+            clay_normal_tex,
+            world_pos_tex,
+            _BlitTexture,
+            _BlitScaleBias,
 
             light_dir,
             light_color,
@@ -38,6 +43,8 @@ namespace Features.Clay.Scripts
         [SerializeField] private Color lightColor = Color.white;
         [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private float sssStrength = 2.0f;
+        [SerializeField] private Texture2D clayMainTex;
+        [SerializeField] private Texture2D clayNormalTex;
 
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
@@ -66,6 +73,8 @@ namespace Features.Clay.Scripts
             _mat.SetColor(Uniforms.light_color, lightColor);
             _mat.SetColor(Uniforms.clay_color, clayColor);
             _mat.SetFloat(Uniforms.sss_strength, sssStrength);
+            _mat.SetTexture(Uniforms.clay_main_tex, clayMainTex);
+            _mat.SetTexture(Uniforms.clay_normal_tex, clayNormalTex);
 
             _clayDepthPass.Setup(particlePosBuffer);
         }
