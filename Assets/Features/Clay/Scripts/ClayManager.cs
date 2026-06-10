@@ -24,7 +24,7 @@ namespace Features.Clay.Scripts
         private void Start()
         {
             _compute = new ClayCompute(computeDesc);
-            _renderer = new ClayRenderer(rendererDesc, _compute);
+            _renderer = new ClayRenderer(rendererDesc, _compute, transform);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
             _clayForce = new ClayForce(clayForceDesc);
