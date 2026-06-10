@@ -216,28 +216,21 @@ Shader "Hidden/Clay"
                 if (depth >= 1.0) discard;
                 #endif
 
-                float3 view_pos = compute_view_pos_from_depth(IN.texcoord, depth);
-                
-                float3 ddx = get_view_pos_from_texcoord(IN.texcoord + float2(_BlitTexture_TexelSize.x, 0)) - view_pos;
-                float3 ddy = get_view_pos_from_texcoord(IN.texcoord + float2(0, _BlitTexture_TexelSize.y)) - view_pos;
-                float3 ddx2 = view_pos - get_view_pos_from_texcoord(IN.texcoord + float2(-_BlitTexture_TexelSize.x, 0));
-                float3 ddy2 = view_pos - get_view_pos_from_texcoord(IN.texcoord + float2(0, -_BlitTexture_TexelSize.y));
+                float3 pos_vs = ComputeViewSpacePosition(IN.texcoord, depth, UNITY_MATRIX_I_P);
 
-                ddx = abs(ddx.z) < abs(ddx2.z) ? ddx : ddx2;
-                ddy = abs(ddy.z) < abs(ddy2.z) ? ddy : ddy2;
-
-                float3 n = -normalize(cross(ddx, ddy));
-                float2 oct_uv = dir_to_equirect_uv(n);
-                float3 albedo = SAMPLE_TEXTURE2D(clay_main_tex, sampler_LinearClamp, oct_uv).rgb;
+                float3 n = cross(ddx(pos_vs), ddy(pos_vs));
+                n = normalize(mul(transpose(UNITY_MATRIX_I_V), float4(n, 0)).rgb);
+                float2 oct_uv = dir_to_oct_uv(n);
+                float3 albedo = clay_color;
                 float3 normal_detail = SAMPLE_TEXTURE2D(
                     clay_normal_tex, sampler_LinearRepeat, oct_uv * 2
                 ).rgb * 2.0 - 1.0;
                 normal_detail = mul((float3x3)UNITY_MATRIX_V, normal_detail);
 
-                // n = normalize(n + normal_detail * .5); // 法線にディテールを加算
+                // n = normalize(n + normal_detail * .2); // 法線にディテールを加算
 
                 // ライト・視線方向をビュー空間に変換
-                float3 l = normalize(mul((float3x3)UNITY_MATRIX_V, _MainLightPosition.xyz));
+                float3 l = normalize(_MainLightPosition.xyz);
                 float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
                 float3 h = normalize(l + v);
 
