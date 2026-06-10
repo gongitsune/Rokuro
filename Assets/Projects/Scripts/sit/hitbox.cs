@@ -1,11 +1,13 @@
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+using UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets;
 
 public class hitbox : MonoBehaviour
 {
     private XRBodyTransformer transformer;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField] private DynamicMoveProvider moveProvider;
     void Start()
     {
         transformer = GetComponentInChildren<XRBodyTransformer>();
@@ -34,6 +36,7 @@ public class hitbox : MonoBehaviour
             transformer.QueueTransformation(translateData);
             transformer.QueueTransformation(rotateData);
 
+            moveProvider.moveSpeed = 0f; //ƒJƒƒ‰‚ÌˆÚ“®‘¬“x‚ğ0‚ÉŒÅ’è
             //transform.position = colliderCenter + offset;
             //xr.transform.rotation = Quaternion.Euler(0f,180f,0f);
         }

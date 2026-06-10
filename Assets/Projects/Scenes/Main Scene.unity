@@ -1401,6 +1401,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -5711052370896006010, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1923146057}
+    - targetCorrespondingSourceObject: {fileID: -3852341972610935857, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1901731198}
   m_SourcePrefab: {fileID: 100100000, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
 --- !u!1 &785830682
 GameObject:
@@ -2568,6 +2571,33 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!1 &1901731194 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -3852341972610935857, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
+  m_PrefabInstance: {fileID: 591351554}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &1901731198
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901731194}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -6281424698479989189, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
 --- !u!1 &1923146053 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -5711052370896006010, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
@@ -3468,6 +3498,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 992f21d4032d52b4485a20b0e8218d3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::hitbox
+  moveProvider: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
