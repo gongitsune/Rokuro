@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: f94a57e4ab80e594f9d12743b51ebd3b, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -886,10 +886,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e92a7596cec1af64482b66408ad3e5bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ControllerManager
-  leftPositionInput: {fileID: -2024308242397127297, guid: c348712bda248c246b8c49b3db54643f, type: 3}
-  rightPositionInput: {fileID: 0}
-  leftHandObject: {fileID: 145151413}
-  rightHandObject: {fileID: 0}
+  mainCam: {fileID: 0}
+  leftHandPrefab: {fileID: 0}
+  rightHandPrefab: {fileID: 0}
+  moveSpeed: 0
+  rotateSpeed: 0
+  leftHandPosAction: {fileID: 0}
+  leftHandRotAction: {fileID: 0}
+  leftHandTriggerAction: {fileID: 0}
+  rightHandTriggerAction: {fileID: 0}
+  rightHandPosAction: {fileID: 0}
+  rightHandRotAction: {fileID: 0}
 --- !u!114 &1675775647
 MonoBehaviour:
   m_ObjectHideFlags: 0
