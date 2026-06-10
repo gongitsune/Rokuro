@@ -25,7 +25,7 @@ float gauss_weight(float dist2, float sigma)
 
 float sample_depth(float2 uv)
 {
-    return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, uv, 0).r;
+    return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, uv, 0).r;
 }
 
 // Eye-space深度（正値）に変換
@@ -192,6 +192,8 @@ float narrow_range_filter_2d(float2 uv)
 
 float narrow_range_filter_frag(Varyings IN) : SV_Depth
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN);
+
     if (direction == 0)
         return narrow_range_filter_1d(IN.texcoord, float2(1, 0));
     if (direction == 1)

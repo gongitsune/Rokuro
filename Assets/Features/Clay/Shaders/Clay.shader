@@ -14,6 +14,8 @@ Shader "Hidden/Clay"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
         #include "Assets/Features/Clay/Shaders/Parameters.hlsl"
+
+        #pragma multi_compile _ UNITY_SINGLE_PASS_STEREO STEREO_INSTANCING_ON STEREO_MULTIVIEW_ON
         ENDHLSL
 
         Pass
@@ -28,9 +30,13 @@ Shader "Hidden/Clay"
             #pragma vertex vert
             #pragma fragment frag
 
+            #pragma multi_compile_instancing
+            #pragma instancing_options renderingLayer
+
             struct attributes
             {
                 uint vert_id : SV_VertexID;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct varyings
@@ -38,6 +44,7 @@ Shader "Hidden/Clay"
                 float4 clip_pos : SV_POSITION;
                 float2 local_uv : TEXCOORD0;
                 float3 view_pos: TEXCOORD1;
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             static const float2 quad[6] = {
@@ -47,6 +54,10 @@ Shader "Hidden/Clay"
 
             varyings vert(attributes IN)
             {
+                UNITY_SETUP_INSTANCE_ID(IN);
+                varyings OUT;
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+
                 uint pid = IN.vert_id / 6;
                 uint q_id = IN.vert_id % 6;
 
@@ -57,7 +68,6 @@ Shader "Hidden/Clay"
                 float3 view_pos = mul(UNITY_MATRIX_V, float4(p_pos, 1.0)).xyz;
                 float4 out_pos = mul(UNITY_MATRIX_P, float4(view_pos + corner, 1.0));
 
-                varyings OUT;
                 OUT.clip_pos = out_pos;
                 OUT.local_uv = uv;
                 OUT.view_pos = view_pos;
@@ -66,6 +76,8 @@ Shader "Hidden/Clay"
 
             float frag(varyings IN) : SV_Depth
             {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN);
+
                 float2 normal_xy = IN.local_uv * 2.0 - 1.0;
                 float r2 = dot(normal_xy, normal_xy);
                 if (r2 > 1.0) discard;
@@ -104,7 +116,9 @@ Shader "Hidden/Clay"
 
             float4 frag(Varyings IN) : SV_Target
             {
-                float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, IN.texcoord, 0).r;
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN);
+
+                float depth = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, IN.texcoord, 0).r;
                 #if defined(UNITY_REVERSED_Z)
                 if (depth <= 0.0) discard;
                 #else
@@ -115,7 +129,7 @@ Shader "Hidden/Clay"
 
                 float3 n = cross(ddx(pos_vs), ddy(pos_vs));
                 n = normalize(mul(transpose(UNITY_MATRIX_I_V), float4(n, 0)).rgb);
-                float3 albedo = clay_color;
+                float3 albedo = clay_color.rgb;
 
                 // ライト・視線方向をビュー空間に変換
                 float3 l = normalize(_MainLightPosition.xyz);
