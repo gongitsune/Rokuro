@@ -11,7 +11,8 @@ int direction; // 0=水平, 1=垂直, 2=2D(クリーンアップ)
 
 float4 clay_color;
 
+float4x4 object_to_world;
+
 StructuredBuffer<float3> particle_pos;
-Texture2D clay_main_tex, clay_normal_tex;
 
 #endif

@@ -22,10 +22,9 @@ namespace Features.Clay.Scripts
             max_filter_radius,
             direction,
 
-            clay_main_tex,
-            clay_normal_tex,
-
-            clay_color
+            clay_color,
+            
+            object_to_world
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
@@ -50,7 +49,7 @@ namespace Features.Clay.Scripts
             _clayDepthPass = new ClayDepthPass(_mat);
         }
 
-        public async UniTask Setup(GraphicsBuffer particlePosBuffer)
+        public async UniTask Setup(GraphicsBuffer particlePosBuffer, Transform root)
         {
             await UniTask.WaitUntil(() => _clayDepthPass != null);
             await UniTask.Yield();
@@ -64,10 +63,8 @@ namespace Features.Clay.Scripts
             _mat.SetFloat(Uniforms.max_filter_radius, maxFilterSize);
 
             _mat.SetColor(Uniforms.clay_color, clayColor);
-            _mat.SetTexture(Uniforms.clay_main_tex, clayMainTex);
-            _mat.SetTexture(Uniforms.clay_normal_tex, clayNormalTex);
 
-            _clayDepthPass.Setup(particlePosBuffer);
+            _clayDepthPass.Setup(particlePosBuffer, root);
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

@@ -8,9 +8,9 @@ namespace Features.Clay.Scripts
     {
         private readonly GraphicsBuffer _particlePosBuffer;
 
-        public ClayRenderer(Desc desc, ClayCompute compute)
+        public ClayRenderer(Desc desc, ClayCompute compute, Transform root)
         {
-            desc.renderFeature.Setup(compute.GetParticlePosBuffer()).Forget();
+            desc.renderFeature.Setup(compute.GetParticlePosBuffer(), root).Forget();
         }
 
         [Serializable]

@@ -13,6 +13,7 @@ namespace Features.Clay.Scripts
         private const string ShadingProfilerTag = "Clay Shading Pass";
         private readonly MaterialWrapper<ClayRenderFeature.Uniforms> _mat;
         private readonly int[] _particleCount = { 0 };
+        private readonly Transform[] _clayRoot = { null };
 
         public ClayDepthPass(MaterialWrapper<ClayRenderFeature.Uniforms> mat)
         {
@@ -21,9 +22,10 @@ namespace Features.Clay.Scripts
             renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
         }
 
-        public void Setup(GraphicsBuffer particlePosBuffer)
+        public void Setup(GraphicsBuffer particlePosBuffer, Transform clayRoot)
         {
             _particleCount[0] = particlePosBuffer.count;
+            _clayRoot[0] = clayRoot;
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -49,6 +51,9 @@ namespace Features.Clay.Scripts
             {
                 passData.Mat = _mat.Material;
                 passData.ParticleCount = _particleCount;
+                passData.ClayRoot = _clayRoot;
+                passData.ObjectToWorldPropId = _mat.GetPropertyId(ClayRenderFeature.Uniforms.object_to_world);
+                passData.PropBlock = new MaterialPropertyBlock();
 
                 builder.AllowPassCulling(false);
                 builder.SetRenderAttachmentDepth(depthTempRTs[0], AccessFlags.Write);
@@ -59,12 +64,11 @@ namespace Features.Clay.Scripts
 
                     using (new ProfilingScope(ctx.cmd, new ProfilingSampler(DepthProfilerTag)))
                     {
+                        data.PropBlock.SetMatrix(data.ObjectToWorldPropId, data.ClayRoot[0].localToWorldMatrix);
                         ctx.cmd.DrawProcedural(
-                            Matrix4x4.identity,
-                            data.Mat,
-                            0,
-                            MeshTopology.Triangles,
-                            6 * data.ParticleCount[0]
+                            Matrix4x4.identity, data.Mat, 0,
+                            MeshTopology.Triangles, 6 * data.ParticleCount[0],1,
+                            data.PropBlock
                         );
                     }
                 });
@@ -131,6 +135,9 @@ namespace Features.Clay.Scripts
         {
             public Material Mat;
             public int[] ParticleCount;
+            public int ObjectToWorldPropId;
+            public Transform[] ClayRoot;
+            public MaterialPropertyBlock PropBlock;
         }
 
         private class ShadingPassData
