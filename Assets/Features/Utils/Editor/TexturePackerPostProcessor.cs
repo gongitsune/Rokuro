@@ -62,6 +62,9 @@ namespace Features.Utils.Editor
         /// <param name="baseName">テクスチャのベースネーム</param>
         private static void TryPackTextures(string dir, string baseName)
         {
+            var outputPath = Path.Combine(dir, baseName + SuffixMask + ".png");
+            if (File.Exists(outputPath)) return;
+
             // 各ソースファイルを探す（拡張子は問わない）
             var roughnessPath = FindFile(dir, baseName + SuffixRoughness);
             var metallicPath = FindFile(dir, baseName + SuffixMetallic);
@@ -123,7 +126,6 @@ namespace Features.Utils.Editor
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(output);
 
-            var outputPath = Path.Combine(dir, baseName + SuffixMask + ".png");
             File.WriteAllBytes(outputPath, tex.EncodeToPNG());
 
             Object.DestroyImmediate(tex);
@@ -144,6 +146,9 @@ namespace Features.Utils.Editor
         /// <param name="baseName">テクスチャのベースネーム</param>
         private static void TryGenerateNormal(string dir, string baseName)
         {
+            var outputPath = Path.Combine(dir, baseName + SuffixNormal + ".png").Replace('\\', '/');
+            if (File.Exists(outputPath)) return;
+
             var dispPath = FindFile(dir, baseName + SuffixDisplacement);
             if (dispPath == null) return;
 
@@ -192,7 +197,6 @@ namespace Features.Utils.Editor
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(output);
 
-            var outputPath = Path.Combine(dir, baseName + SuffixNormal + ".png").Replace('\\', '/');
             File.WriteAllBytes(outputPath, tex.EncodeToPNG());
 
             Object.DestroyImmediate(tex);
