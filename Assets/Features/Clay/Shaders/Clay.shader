@@ -13,20 +13,7 @@ Shader "Hidden/Clay"
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
-
-        CBUFFER_START(UnityPerMaterial)
-            float radius;
-
-            float projected_particle_constant;
-            float depth_threshold;
-            int max_filter_size;
-            float4 blur_dir;
-
-            float4 clay_color;
-        CBUFFER_END
-
-        StructuredBuffer<float3> particle_pos;
-        Texture2D clay_main_tex, clay_normal_tex;
+        #include "Assets/Features/Clay/Shaders/Parameters.hlsl"
         ENDHLSL
 
         Pass
@@ -96,56 +83,16 @@ Shader "Hidden/Clay"
 
         Pass
         {
-            Tags
-            {
-                "LightMode"="DepthNormal"
-            }
-
-            Name "Bilateral"
+            Name "Filter"
 
             ZTest Always
             ColorMask 0
 
             HLSLPROGRAM
             #pragma vertex   Vert
-            #pragma fragment frag
+            #pragma fragment narrow_range_filter_frag
 
-            float frag(Varyings input) : SV_Depth
-            {
-                float depth = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, input.texcoord).r;
-                if (depth >= 1.0 || depth <= 0.0) return depth;
-
-                int filter_size = min(max_filter_size, ceil(projected_particle_constant / depth));
-
-                float sigma = filter_size / 3.0;
-                float two_sigma = 2.0 * sigma * sigma;
-                float sigma_depth = depth_threshold / 3.0;
-                float two_sigma_depth = 2.0 * sigma_depth * sigma_depth;
-
-                float sum = 0.0;
-                float wsum = 0.0;
-
-                for (int x = -filter_size; x <= filter_size; ++x)
-                {
-                    float sampled_depth = SAMPLE_TEXTURE2D_LOD(
-                        _BlitTexture,
-                        sampler_LinearClamp,
-                        input.texcoord + x * blur_dir.xy * _BlitTexture_TexelSize.xy,
-                        0
-                    ).r;
-                    sampled_depth = abs(sampled_depth);
-
-                    float rr = 2.0 * x * x;
-                    float w = exp(-rr / two_sigma);
-
-                    float r_depth = sampled_depth - depth;
-                    float wd = exp(-r_depth * r_depth / two_sigma_depth);
-                    sum += sampled_depth * w * wd;
-                    wsum += w * wd;
-                }
-
-                return sum / wsum;
-            }
+            #include "Assets/Features/Clay/Shaders/NarrowRangeFilter.hlsl"
             ENDHLSL
         }
 

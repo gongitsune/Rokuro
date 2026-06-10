@@ -1,6 +1,4 @@
-using System;
 using Features.Utils.Scripts;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -13,13 +11,11 @@ namespace Features.Clay.Scripts
     {
         private const string DepthProfilerTag = "Clay Depth Pass";
         private const string ShadingProfilerTag = "Clay Shading Pass";
-        private readonly Func<float, float, float> _calcProjected;
         private readonly MaterialWrapper<ClayRenderFeature.Uniforms> _mat;
         private readonly int[] _particleCount = { 0 };
 
-        public ClayDepthPass(MaterialWrapper<ClayRenderFeature.Uniforms> mat, Func<float, float, float> calcProjected)
+        public ClayDepthPass(MaterialWrapper<ClayRenderFeature.Uniforms> mat)
         {
-            _calcProjected = calcProjected;
             _mat = mat;
 
             renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
@@ -32,32 +28,18 @@ namespace Features.Clay.Scripts
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
-            var camData = frameData.Get<UniversalCameraData>();
             var resourceData = frameData.Get<UniversalResourceData>();
-            var cam = camData.camera;
 
             var depthDesc = renderGraph.GetTextureDesc(resourceData.activeDepthTexture);
-            depthDesc.name = "Smooth Temp RT";
             depthDesc.msaaSamples = MSAASamples.None;
             depthDesc.clearBuffer = true;
-            var depthTempRT = renderGraph.CreateTexture(depthDesc);
 
-            _mat.SetFloat(
-                ClayRenderFeature.Uniforms.projected_particle_constant,
-                _calcProjected(depthDesc.height, math.radians(cam.fieldOfView))
-            );
-
-            var blurHProp = new MaterialPropertyBlock();
-            blurHProp.SetVector(
-                _mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir),
-                new Vector4(1, 0, 0, 0)
-            );
-            var blurVProp = new MaterialPropertyBlock();
-            blurVProp.SetVector(
-                _mat.GetPropertyId(ClayRenderFeature.Uniforms.blur_dir),
-                new Vector4(0, 1, 0, 0)
-            );
-            var shadingProp = new MaterialPropertyBlock();
+            var depthTempRTs = new TextureHandle[2];
+            for (var i = 0; i < 2; i++)
+            {
+                depthDesc.name = $"Smooth Temp RT {i}";
+                depthTempRTs[i] = renderGraph.CreateTexture(depthDesc);
+            }
 
             using (var builder = renderGraph.AddRasterRenderPass(
                        "Clay Depth Pass",
@@ -69,7 +51,7 @@ namespace Features.Clay.Scripts
                 passData.ParticleCount = _particleCount;
 
                 builder.AllowPassCulling(false);
-                builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(depthTempRTs[0], AccessFlags.Write);
 
                 builder.SetRenderFunc<DepthPassData>(static (data, ctx) =>
                 {
@@ -88,37 +70,47 @@ namespace Features.Clay.Scripts
                 });
             }
 
+            var props = new MaterialPropertyBlock[2];
+            for (var i = 0; i < 2; i++)
+            {
+                var prop = new MaterialPropertyBlock();
+                prop.SetInt(_mat.GetPropertyId(ClayRenderFeature.Uniforms.direction), i % 2);
+                props[i] = prop;
+            }
+
+            for (var i = 0; i < 2 * 2; i++)
+            {
+                var prop = props[i % 2];
+                var src = depthTempRTs[i % 2];
+                var dst = depthTempRTs[(i + 1) % 2];
+                var dir = i % 2 == 0 ? "Horizontal" : "Vertical";
+
+                using var builder = renderGraph.AddBlitPass(
+                    new RenderGraphUtils.BlitMaterialParameters(
+                        src, dst, _mat.Material, 1, prop,
+                        RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
+                    ),
+                    $"Narrow Range Filter Pass {dir}",
+                    true
+                );
+
+                builder.AllowPassCulling(false);
+            }
+
+            var cleanUpProp = new MaterialPropertyBlock();
+            cleanUpProp.SetInt(_mat.GetPropertyId(ClayRenderFeature.Uniforms.direction), 2);
             using (var builder = renderGraph.AddBlitPass(
                        new RenderGraphUtils.BlitMaterialParameters(
-                           resourceData.activeDepthTexture,
-                           depthTempRT,
-                           _mat.Material,
-                           1,
-                           blurHProp,
-                           RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
+                           depthTempRTs[0], resourceData.activeDepthTexture,
+                           _mat.Material, 1, cleanUpProp
                        ),
-                       "Bilateral Horizontal Pass",
+                       "Narrow Range Filter CleanUp Pass",
                        true
                    ))
             {
                 builder.AllowPassCulling(false);
             }
 
-            using (var builder = renderGraph.AddBlitPass(
-                       new RenderGraphUtils.BlitMaterialParameters(
-                           depthTempRT,
-                           resourceData.activeDepthTexture,
-                           _mat.Material,
-                           1,
-                           blurVProp,
-                           RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
-                       ),
-                       "Bilateral Vertical Pass",
-                       true
-                   ))
-            {
-                builder.AllowPassCulling(false);
-            }
 
             using (var builder = renderGraph.AddBlitPass(
                        new RenderGraphUtils.BlitMaterialParameters(
