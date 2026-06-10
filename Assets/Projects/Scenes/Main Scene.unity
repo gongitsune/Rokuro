@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: f94a57e4ab80e594f9d12743b51ebd3b, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000000, guid: 3b1716ee9bfeca44bb81fdcef9022896, type: 2}
+  m_LightingDataAsset: {fileID: 112000000, guid: 475c6dc26f041554bb0bf75654bf9056, type: 2}
   m_LightingSettings: {fileID: 4890085278179872738, guid: 825450513332b41d4aa610c95bc964c8, type: 2}
 --- !u!196 &4
 NavMeshSettings:
@@ -580,6 +580,85 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!1 &404776769
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 404776771}
+  - component: {fileID: 404776770}
+  m_Layer: 0
+  m_Name: Clay
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &404776770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 404776769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85f71748227b4814b3db915ffe6a6699, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
+  computeDesc:
+    computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
+    particleCount: 100000
+    gridResolution: 96
+    dt: 0.0002
+    maxIter: 25
+    particleRho: 1
+    youngModulus: 550
+    nu: 0.4
+    gravity:
+      x: 0
+      y: -5.32
+      z: 0
+    cylinderRadius: 0.25
+    cylinderHeight: 0.5
+    frictionAngleDeg: 13
+    dpCohesion: 2
+    dpHardening: 0.4
+    damping: 0.99
+  rendererDesc:
+    renderFeature: {fileID: -1703337350216040766, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+  particleRendererDesc:
+    material: {fileID: 2100000, guid: 6b88e15be61c94f1f88587f0f235f969, type: 2}
+  gridVelRendererDesc:
+    material: {fileID: 2100000, guid: 671b80febbefb428280a3dd6046ecfbf, type: 2}
+  clayForceDesc:
+    showGizmos: 1
+    gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    detectionLayerMask:
+      serializedVersion: 2
+      m_Bits: 1
+    maxObjectsDetected: 8
+    influenceRadius: 0.174
+    pushStrength: 100
+  debugDraw: 0
+--- !u!4 &404776771
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 404776769}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &479599526
 GameObject:
   m_ObjectHideFlags: 0
@@ -3400,3 +3479,4 @@ SceneRoots:
   - {fileID: 2042115773}
   - {fileID: 952544495}
   - {fileID: 591351554}
+  - {fileID: 404776771}
