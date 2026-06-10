@@ -92,7 +92,7 @@ namespace Features.Clay.Scripts
                 using var builder = renderGraph.AddBlitPass(
                     new RenderGraphUtils.BlitMaterialParameters(
                         src, dst, _mat.Material, 1, prop,
-                        RenderGraphUtils.FullScreenGeometryType.ProceduralQuad
+                        RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle
                     ),
                     $"Narrow Range Filter Pass {dir}",
                     true
@@ -106,7 +106,8 @@ namespace Features.Clay.Scripts
             using (var builder = renderGraph.AddBlitPass(
                        new RenderGraphUtils.BlitMaterialParameters(
                            depthTempRTs[0], resourceData.activeDepthTexture,
-                           _mat.Material, 1, cleanUpProp
+                           _mat.Material, 1, cleanUpProp,
+                           RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle
                        ),
                        "Narrow Range Filter CleanUp Pass",
                        true
@@ -121,7 +122,9 @@ namespace Features.Clay.Scripts
                            resourceData.activeDepthTexture,
                            resourceData.activeColorTexture,
                            _mat.Material,
-                           2
+                           2,
+                           null,
+                           geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle
                        ),
                        "Clay Shading Pass",
                        true
