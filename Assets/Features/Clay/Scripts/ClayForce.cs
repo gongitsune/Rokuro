@@ -11,15 +11,17 @@ namespace Features.Clay.Scripts
         private readonly ObjectForce[] _activeForces;
         private readonly Collider[] _colliderBuffer;
         private readonly Desc _desc;
+        private readonly Transform _root;
 
         private int _activeForceCount;
 
-        public ClayForce(Desc desc)
+        public ClayForce(Desc desc, Transform root)
         {
             _desc = desc;
             _colliderBuffer = new Collider[_desc.maxObjectsDetected];
             _activeForces = new ObjectForce[_desc.maxObjectsDetected];
             _activeForceCount = 0;
+            _root = root;
         }
 
         public void Update(Vector3 simOrigin, float simScale)
@@ -44,11 +46,11 @@ namespace Features.Clay.Scripts
                 var rb = collider.attachedRigidbody;
                 if (!rb || !rb.isKinematic) continue;
 
-                var closestPoint = collider.ClosestPoint(simOrigin);
+                var point = _root.worldToLocalMatrix.MultiplyPoint(rb.position);
 
                 _activeForces[_activeForceCount] = new ObjectForce
                 {
-                    Position = closestPoint,
+                    Position = point,
                     Radius = _desc.influenceRadius,
                     Strength = _desc.pushStrength
                 };
@@ -77,7 +79,7 @@ namespace Features.Clay.Scripts
             for (var i = 0; i < _activeForceCount; i++)
             {
                 var f = _activeForces[i];
-                var p = new Vector3(f.Position.x, f.Position.y, f.Position.z);
+                var p = _root.localToWorldMatrix.MultiplyPoint(f.Position);
                 Gizmos.DrawWireSphere(p, f.Radius);
                 Gizmos.DrawSphere(p, math.min(f.Radius * 0.05f, 0.02f));
             }

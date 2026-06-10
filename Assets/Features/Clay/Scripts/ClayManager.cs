@@ -1,4 +1,3 @@
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -15,11 +14,8 @@ namespace Features.Clay.Scripts
         private ClayForce _clayForce;
         private ClayCompute _compute;
         private ClayGridVelRenderer _gridVelRenderer;
-        private Light _light;
         private ClayParticleRenderer _particleRenderer;
         private ClayRenderer _renderer;
-
-        private Camera _sceneCam;
 
         private void Start()
         {
@@ -27,12 +23,9 @@ namespace Features.Clay.Scripts
             _renderer = new ClayRenderer(rendererDesc, _compute, transform);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
-            _clayForce = new ClayForce(clayForceDesc);
+            _clayForce = new ClayForce(clayForceDesc, transform);
 
             _compute.Reset();
-
-            _sceneCam = Camera.main;
-            _light = FindAnyObjectByType<Light>();
         }
 
         private void Update()
@@ -44,16 +37,6 @@ namespace Features.Clay.Scripts
 
             if (debugDraw)
                 _gridVelRenderer.Draw();
-
-            if (_sceneCam)
-            {
-                var lightDir = math.mul(_light.transform.rotation, new Vector3(0, 0, -1));
-                var camPos = new float3(_sceneCam.transform.position);
-                Debug.DrawLine(camPos, camPos + lightDir, Color.yellow);
-
-                var viewLightDir = _sceneCam.worldToCameraMatrix.MultiplyPoint(lightDir);
-                Debug.DrawLine(camPos, camPos + new float3(viewLightDir), Color.red);
-            }
         }
 
         private void OnDestroy()
