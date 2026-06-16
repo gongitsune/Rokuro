@@ -72,3 +72,5 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 .idea/
+/[Aa]ssets/_Recovery
+/[Aa]ssets/_Recovery.meta
