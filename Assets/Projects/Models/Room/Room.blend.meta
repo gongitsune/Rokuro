@@ -17,6 +17,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: chair.metal
+    second: {fileID: 2100000, guid: 00a6486ed49834cc7aa1d84b4fe96de6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: cushion
     second: {fileID: 2100000, guid: 60ac659d6ee7843389be6851ea938e8a, type: 2}
   - first:

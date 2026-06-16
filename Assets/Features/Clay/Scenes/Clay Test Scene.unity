@@ -524,13 +524,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 266137085}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.9729778, z: -0, w: -0.23089868}
-  m_LocalPosition: {x: 0, y: 1.67, z: 3.41}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0.4, y: 0.403, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 206.7, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &266137089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -621,9 +621,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 100000
+    particleCount: 20000
     gridResolution: 96
-    dt: 0.0002
+    dt: 0.00015
     maxIter: 25
     particleRho: 1
     youngModulus: 550
@@ -1466,6 +1466,10 @@ PrefabInstance:
       value: Room
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
@@ -1598,6 +1602,10 @@ PrefabInstance:
       value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 8092431428196706679, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 8493015188241380710, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
@@ -2510,7 +2518,7 @@ Transform:
   m_GameObject: {fileID: 1332882554}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.16, y: 0.34, z: -1.93}
+  m_LocalPosition: {x: -0.16, y: -0.569, z: -1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2913,7 +2921,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: cb8e41cd693c84c659f415f997015a65, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2954,7 +2962,7 @@ Transform:
   m_GameObject: {fileID: 1811173498}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.263, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
