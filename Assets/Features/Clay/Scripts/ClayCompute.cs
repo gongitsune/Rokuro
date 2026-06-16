@@ -9,22 +9,64 @@ namespace Features.Clay.Scripts
 {
     public class ClayCompute : IDisposable
     {
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        public enum Kernels
+        {
+            clear_grid,
+            particle_to_grid,
+            grid_update,
+            grid_to_particle,
+            reset
+        }
+
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        public enum Uniforms
+        {
+            n_particles,
+            n_grid,
+            dx,
+            inv_dx,
+            dt,
+            p_vol,
+            p_rho,
+            p_mass,
+            mu_0,
+            lambda_0,
+            dp_alpha,
+            dp_cohesion,
+            dp_hardening,
+            damping,
+            gravity,
+            cylinder_radius,
+            cylinder_height,
+            x,
+            particles,
+            grid_v,
+            grid_m,
+            object_forces,
+            object_force_count,
+            n_mc_grid,
+            inv_mc_dx,
+            mc_grid
+        }
+
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
         private readonly Desc _desc;
         private readonly GraphicsBuffer _gridMBuf, _gridVBuf;
         private readonly GraphicsBuffer _objectForcesBuf;
-        private readonly GraphicsBuffer _xBuf, _particleBuf;
+        private readonly GraphicsBuffer _posBuf, _particleBuf;
 
-        public ClayCompute(Desc desc)
+        public ClayCompute(Desc desc, ClayMc clayMc)
         {
             _desc = desc;
             _computeShader = new ComputeShaderWrapper<Kernels, Uniforms>(desc.computeShader);
+            clayMc.SetupMcBuffers(_computeShader, desc.gridResolution);
 
             UpdateConstantBuffer();
 
             // バッファを初期化
             var gridCount = desc.gridResolution * desc.gridResolution * desc.gridResolution;
-            _xBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
+            _posBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 3);
             _particleBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, desc.particleCount, sizeof(float) * 28);
             _gridVBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount * 3, sizeof(int));
             _gridMBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, gridCount, sizeof(int));
@@ -33,7 +75,7 @@ namespace Features.Clay.Scripts
             _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_v, _gridVBuf);
             _computeShader.SetBuffer(Kernels.clear_grid, Uniforms.grid_m, _gridMBuf);
 
-            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.x, _posBuf);
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.particles, _particleBuf);
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_v, _gridVBuf);
             _computeShader.SetBuffer(Kernels.particle_to_grid, Uniforms.grid_m, _gridMBuf);
@@ -46,11 +88,11 @@ namespace Features.Clay.Scripts
             _computeShader.SetBuffer(Kernels.grid_update, Uniforms.object_forces, _objectForcesBuf);
             _computeShader.SetInt(Uniforms.object_force_count, 0);
 
-            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.x, _posBuf);
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.particles, _particleBuf);
             _computeShader.SetBuffer(Kernels.grid_to_particle, Uniforms.grid_v, _gridVBuf);
 
-            _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _xBuf);
+            _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _posBuf);
             _computeShader.SetBuffer(Kernels.reset, Uniforms.particles, _particleBuf);
         }
 
@@ -58,7 +100,7 @@ namespace Features.Clay.Scripts
 
         public void Dispose()
         {
-            _xBuf?.Dispose();
+            _posBuf?.Dispose();
             _particleBuf?.Dispose();
             _gridMBuf?.Dispose();
             _gridVBuf?.Dispose();
@@ -67,7 +109,7 @@ namespace Features.Clay.Scripts
 
         public GraphicsBuffer GetParticlePosBuffer()
         {
-            return _xBuf;
+            return _posBuf;
         }
 
         public GraphicsBuffer GetGridVelBuffer()
@@ -150,44 +192,6 @@ namespace Features.Clay.Scripts
             public float dpCohesion = 14f;
             public float dpHardening = 0.8f;
             public float damping = 0.95f;
-        }
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private enum Kernels
-        {
-            clear_grid,
-            particle_to_grid,
-            grid_update,
-            grid_to_particle,
-            reset
-        }
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private enum Uniforms
-        {
-            n_particles,
-            n_grid,
-            dx,
-            inv_dx,
-            dt,
-            p_vol,
-            p_rho,
-            p_mass,
-            mu_0,
-            lambda_0,
-            dp_alpha,
-            dp_cohesion,
-            dp_hardening,
-            damping,
-            gravity,
-            cylinder_radius,
-            cylinder_height,
-            x,
-            particles,
-            grid_v,
-            grid_m,
-            object_forces,
-            object_force_count
         }
     }
 }

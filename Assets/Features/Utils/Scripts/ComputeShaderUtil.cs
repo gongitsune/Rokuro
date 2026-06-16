@@ -48,6 +48,16 @@ namespace Features.Utils.Scripts
             _shader.Dispatch(_kernelMap[kernel], threadGroups.x, threadGroups.y, threadGroups.z);
         }
 
+        public void EnableKeyword(string keyword)
+        {
+            _shader.EnableKeyword(keyword);
+        }
+
+        public void DisableKeyword(string keyword)
+        {
+            _shader.DisableKeyword(keyword);
+        }
+
         public void SetBuffer(TKernel kernel, TUniform uniform, GraphicsBuffer buffer)
         {
             _shader.SetBuffer(_kernelMap[kernel], _uniformMap[uniform], buffer);

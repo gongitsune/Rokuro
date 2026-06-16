@@ -5,6 +5,7 @@ namespace Features.Clay.Scripts
     public class ClayManager : MonoBehaviour
     {
         [SerializeField] private ClayCompute.Desc computeDesc;
+        [SerializeField] private ClayMc.Desc clayMcDesc;
         [SerializeField] private ClayRenderer.Desc rendererDesc;
         [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
         [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
@@ -12,6 +13,7 @@ namespace Features.Clay.Scripts
         [SerializeField] private bool debugDraw = true;
 
         private ClayForce _clayForce;
+        private ClayMc _clayMc;
         private ClayCompute _compute;
         private ClayGridVelRenderer _gridVelRenderer;
         private ClayParticleRenderer _particleRenderer;
@@ -19,7 +21,8 @@ namespace Features.Clay.Scripts
 
         private void Start()
         {
-            _compute = new ClayCompute(computeDesc);
+            _clayMc = new ClayMc(clayMcDesc);
+            _compute = new ClayCompute(computeDesc, _clayMc);
             _renderer = new ClayRenderer(rendererDesc, _compute, transform);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);

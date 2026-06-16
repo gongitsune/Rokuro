@@ -1,4 +1,5 @@
 #pragma enable_d3d11_debug_symbols
+#pragma multi_compile _ UNIFIED_MC_GRID // MPMの密度グリッドとMC密度グリッドが同じ
 
 #pragma kernel clear_grid
 #pragma kernel particle_to_grid
@@ -59,6 +60,11 @@ cbuffer params
 
     int object_force_count; // オブジェクト力の数
     float padding_obj;
+
+    #ifndef UNIFIED_MC_GRID
+    int n_mc_grid; // Marching Cubes密度グリッドのグリッド数
+    float inv_mc_dx; // 1 / n_mc_grid
+    #endif
 }
 
 // ----------------------
@@ -70,6 +76,9 @@ RWStructuredBuffer<particle> particles; // 位置以外の粒子データ
 // アトミック演算を行うために int にする
 RWStructuredBuffer<int> grid_v;
 RWStructuredBuffer<int> grid_m;
+#ifndef UNIFIED_MC_GRID
+RWStructuredBuffer<int> mc_grid; // Marching Cubes用の密度グリッド
+#endif
 
 // オブジェクト力バッファ
 StructuredBuffer<object_force> object_forces;
@@ -117,12 +126,19 @@ void atomic_add_grid_m(uint3 id, float m)
     InterlockedAdd(grid_m[grid_idx(id)], (int)round(m * WEIGHT_FP_SCALE));
 }
 
+#ifndef UNIFIED_MC_GRID
+void atomic_add_mc_grid(uint3 id, float m)
+{
+    InterlockedAdd(mc_grid[grid_idx(id)], (int)round(m * WEIGHT_FP_SCALE));
+}
+#endif
+
 // ----------------------
 // カーネル
 // ----------------------
 
 // グリッドの速度と質量を初期化
-// buffers: grid_v, grid_m
+// buffers: grid_v, grid_m, mc_grid
 [numthreads(8, 8, 8)]
 void clear_grid(uint3 id : SV_DispatchThreadID)
 {
@@ -131,6 +147,10 @@ void clear_grid(uint3 id : SV_DispatchThreadID)
     uint idx = grid_idx(id);
     set_grid_v(id, 0);
     grid_m[idx] = 0;
+
+    #ifndef UNIFIED_MC_GRID
+    mc_grid[idx] = 0;
+    #endif
 }
 
 // P2G
@@ -231,6 +251,13 @@ void particle_to_grid(uint id : SV_DispatchThreadID)
         float3 weighted_v = weight * (p.v + mul(affine, d_pos) / p_mass);
         atomic_add_grid_v(offset_id, weighted_v);
         atomic_add_grid_m(offset_id, weight);
+
+        // Marching Cubes用の密度を加算
+        #ifndef UNIFIED_MC_GRID
+        int3 mc_id = x_p * inv_mc_dx + offset;
+        if (any(mc_id < n_mc_grid))
+            atomic_add_mc_grid(mc_id, weight);
+        #endif
     }
 
     particles[id] = p;
