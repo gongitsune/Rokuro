@@ -46,7 +46,7 @@ namespace Features.Clay.Scripts
                 var rb = collider.attachedRigidbody;
                 if (!rb || !rb.isKinematic) continue;
 
-                var point = _root.worldToLocalMatrix.MultiplyPoint(rb.position);
+                var point = _root.worldToLocalMatrix.MultiplyPoint(collider.bounds.center);
 
                 _activeForces[_activeForceCount] = new ObjectForce
                 {
@@ -110,7 +110,7 @@ namespace Features.Clay.Scripts
             [Title("Force Parameters")] [Range(0.01f, 1f)]
             public float influenceRadius = 0.1f;
 
-            [Range(0f, 100f)] public float pushStrength = 10f;
+            [Range(0f, 1000f)] public float pushStrength = 10f;
         }
     }
 }
