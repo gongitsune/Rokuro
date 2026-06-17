@@ -9,15 +9,17 @@ namespace Features.Clay.Scripts
     public class ClayForce
     {
         private readonly ObjectForce[] _activeForces;
+        private readonly ClayRenderFeature _clayRenderFeature;
         private readonly Collider[] _colliderBuffer;
         private readonly Desc _desc;
         private readonly Transform _root;
 
         private int _activeForceCount;
 
-        public ClayForce(Desc desc, Transform root)
+        public ClayForce(Desc desc, Transform root, ClayRenderFeature renderFeature)
         {
             _desc = desc;
+            _clayRenderFeature = renderFeature;
             _colliderBuffer = new Collider[_desc.maxObjectsDetected];
             _activeForces = new ObjectForce[_desc.maxObjectsDetected];
             _activeForceCount = 0;
@@ -27,6 +29,7 @@ namespace Features.Clay.Scripts
         public void Update(Vector3 simOrigin, float simScale)
         {
             _activeForceCount = 0;
+            var q = quaternion.RotateY(-_clayRenderFeature.AngleRad);
 
             // オブジェクトを検出
             var colliderCount = Physics.OverlapSphereNonAlloc(
@@ -42,7 +45,10 @@ namespace Features.Clay.Scripts
             {
                 var collider = _colliderBuffer[i];
 
-                var point = _root.worldToLocalMatrix.MultiplyPoint(collider.bounds.center);
+                var point = math.mul(
+                    q,
+                    _root.worldToLocalMatrix.MultiplyPoint(collider.bounds.center) - new Vector3(0.5f, 0.5f, 0.5f)
+                ) + 0.5f;
 
                 _activeForces[_activeForceCount] = new ObjectForce
                 {
@@ -65,19 +71,26 @@ namespace Features.Clay.Scripts
         }
 
         // Gizmosで影響範囲を可視化
-        public void DrawGizmos(Vector3 simOrigin, float simScale)
+        public void DrawGizmos()
         {
             if (!_desc.showGizmos) return;
 
             var prevColor = Gizmos.color;
-            Gizmos.color = _desc.gizmoColor;
+
+            var q = quaternion.RotateY(_clayRenderFeature.AngleRad);
 
             for (var i = 0; i < _activeForceCount; i++)
             {
                 var f = _activeForces[i];
+                var rotatedP = math.mul(q, f.Position - 0.5f) + 0.5f;
+
                 var p = _root.localToWorldMatrix.MultiplyPoint(f.Position);
+                var rp = _root.localToWorldMatrix.MultiplyPoint(rotatedP);
+
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawWireSphere(rp, f.Radius);
+                Gizmos.color = Color.green;
                 Gizmos.DrawWireSphere(p, f.Radius);
-                Gizmos.DrawSphere(p, math.min(f.Radius * 0.05f, 0.02f));
             }
 
             Gizmos.color = prevColor;
@@ -96,7 +109,6 @@ namespace Features.Clay.Scripts
         public class Desc
         {
             [Title("Gizmos")] public bool showGizmos = true;
-            public Color gizmoColor = Color.yellow;
 
             [Title("Detection")] public LayerMask detectionLayerMask = 1 << 0;
 

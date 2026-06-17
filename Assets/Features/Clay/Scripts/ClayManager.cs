@@ -23,7 +23,7 @@ namespace Features.Clay.Scripts
             _compute = new ClayCompute(computeDesc, clayForceDesc);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
-            _clayForce = new ClayForce(clayForceDesc, transform);
+            _clayForce = new ClayForce(clayForceDesc, transform, rendererDesc.renderFeature);
             _ = new ClayRenderer(rendererDesc, _compute, transform);
 
             _compute.Reset();
@@ -52,7 +52,7 @@ namespace Features.Clay.Scripts
             if (!Application.isPlaying) return;
 
             _particleRenderer.OnDrawGizmos();
-            _clayForce?.DrawGizmos(transform.position, 1f);
+            _clayForce?.DrawGizmos();
         }
     }
 }

@@ -36,10 +36,10 @@ namespace Features.Clay.Scripts
         [Title("Shading")] [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private Texture2D clayMainTex;
         [SerializeField] private Texture2D clayNormalTex;
-        private float _angleRad;
-
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
+
+        public float AngleRad { get; private set; }
 
         protected override void Dispose(bool disposing)
         {
@@ -50,8 +50,8 @@ namespace Features.Clay.Scripts
         {
             if (!_mat.Material) return;
 
-            _angleRad += angleRad;
-            _mat.SetFloat(Uniforms.yaw_rad, _angleRad);
+            AngleRad += angleRad;
+            _mat.SetFloat(Uniforms.yaw_rad, AngleRad);
         }
 
         public override void Create()
