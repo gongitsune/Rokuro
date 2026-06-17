@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Sirenix.OdinInspector;
 using Unity.Mathematics;
@@ -43,10 +42,6 @@ namespace Features.Clay.Scripts
             {
                 var collider = _colliderBuffer[i];
 
-                // attachedRigidbodyプロパティを使用（GetComponentより高速）
-                var rb = collider.attachedRigidbody;
-                if (!rb || !rb.isKinematic) continue;
-
                 var point = _root.worldToLocalMatrix.MultiplyPoint(collider.bounds.center);
 
                 _activeForces[_activeForceCount] = new ObjectForce
@@ -57,8 +52,6 @@ namespace Features.Clay.Scripts
                 };
                 _activeForceCount++;
             }
-
-            Debug.Log(string.Join(", ", _activeForces.Select(f => f.Position)));
         }
 
         public int GetActiveForceCount()
@@ -97,7 +90,6 @@ namespace Features.Clay.Scripts
             public float3 Position;
             public float Radius;
             public float Strength;
-            private float3 _padding;
         }
 
         [Serializable]

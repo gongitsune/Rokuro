@@ -661,7 +661,7 @@ MonoBehaviour:
     maxObjectsDetected: 8
     influenceRadius: 0.087
     pushStrength: 291
-  debugDraw: 1
+  debugDraw: 0
 --- !u!33 &286983444
 MeshFilter:
   m_ObjectHideFlags: 0
