@@ -23,8 +23,10 @@ namespace Features.Clay.Scripts
             direction,
 
             clay_color,
-            
-            object_to_world
+
+            object_to_world,
+
+            yaw_rad
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
@@ -34,6 +36,7 @@ namespace Features.Clay.Scripts
         [Title("Shading")] [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private Texture2D clayMainTex;
         [SerializeField] private Texture2D clayNormalTex;
+        private float _angleRad;
 
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
@@ -41,6 +44,12 @@ namespace Features.Clay.Scripts
         protected override void Dispose(bool disposing)
         {
             CoreUtils.Destroy(_mat.Material);
+        }
+
+        public void RotateClay(float angleRad)
+        {
+            _angleRad += angleRad;
+            _mat.SetFloat(Uniforms.yaw_rad, _angleRad);
         }
 
         public override void Create()

@@ -628,6 +628,7 @@ MonoBehaviour:
     dpCohesion: 2
     dpHardening: 0.4
     damping: 0.99
+    rotateSpeed: 10
   clayMcDesc:
     gridResolution: 96
     triangleBudget: 65536
@@ -2811,7 +2812,7 @@ GameObject:
   - component: {fileID: 2042115772}
   - component: {fileID: 2042115771}
   m_Layer: 0
-  m_Name: Directional Light (1)
+  m_Name: Directional Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
