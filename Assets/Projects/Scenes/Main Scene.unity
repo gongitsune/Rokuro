@@ -704,8 +704,8 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 1
     maxObjectsDetected: 12
-    influenceRadius: 0.174
-    pushStrength: 100
+    influenceRadius: 0.087
+    pushStrength: 297
   debugDraw: 1
 --- !u!4 &404776771
 Transform:

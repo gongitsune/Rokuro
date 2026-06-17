@@ -1,6 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Runtime.InteropServices;
 using Features.Utils.Scripts;
 using Sirenix.OdinInspector;
 using Unity.Mathematics;
@@ -57,7 +57,7 @@ namespace Features.Clay.Scripts
         private readonly GraphicsBuffer _objectForcesBuf;
         private readonly GraphicsBuffer _posBuf, _particleBuf;
 
-        public ClayCompute(Desc desc)
+        public ClayCompute(Desc desc, ClayForce.Desc forceDesc)
         {
             _desc = desc;
             _computeShader = new ComputeShaderWrapper<Kernels, Uniforms>(desc.computeShader);
@@ -84,7 +84,10 @@ namespace Features.Clay.Scripts
             _computeShader.SetBuffer(Kernels.grid_update, Uniforms.grid_m, _gridMBuf);
 
             // オブジェクト力バッファを初期化（最大8個のオブジェクト）
-            _objectForcesBuf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, 8, sizeof(float) * 8);
+            _objectForcesBuf = new GraphicsBuffer(
+                GraphicsBuffer.Target.Structured,
+                forceDesc.maxObjectsDetected, Marshal.SizeOf<ClayForce.ObjectForce>()
+            );
             _computeShader.SetBuffer(Kernels.grid_update, Uniforms.object_forces, _objectForcesBuf);
             _computeShader.SetInt(Uniforms.object_force_count, 0);
 
@@ -119,7 +122,9 @@ namespace Features.Clay.Scripts
 
         public void SetObjectForces(ClayForce.ObjectForce[] forces, int forceCount)
         {
-            if (forceCount is > 0 and <= 8) _objectForcesBuf.SetData(forces, 0, 0, forceCount);
+            if (forceCount < 1) return;
+
+            _objectForcesBuf.SetData(forces, 0, 0, forceCount);
             _computeShader.SetInt(Uniforms.object_force_count, forceCount);
         }
 

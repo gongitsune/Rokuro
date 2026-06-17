@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Sirenix.OdinInspector;
 using Unity.Mathematics;
@@ -56,6 +57,8 @@ namespace Features.Clay.Scripts
                 };
                 _activeForceCount++;
             }
+
+            Debug.Log(string.Join(", ", _activeForces.Select(f => f.Position)));
         }
 
         public int GetActiveForceCount()
