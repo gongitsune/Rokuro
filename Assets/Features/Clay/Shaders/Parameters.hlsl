@@ -9,6 +9,8 @@ float sigma_world; // ワールド空間フィルタサイズ
 int max_filter_radius; // カーネルピクセル半径
 int direction; // 0=水平, 1=垂直, 2=2D(クリーンアップ)
 
+float yaw_rad; // Yaw方向の回転
+
 float4 clay_color;
 
 float4x4 object_to_world;

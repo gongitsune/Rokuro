@@ -197,6 +197,8 @@ namespace Features.Clay.Scripts
             public float dpCohesion = 14f;
             public float dpHardening = 0.8f;
             public float damping = 0.95f;
+
+            [Title("Rotation")] public float rotateSpeed = 10f;
         }
     }
 }
