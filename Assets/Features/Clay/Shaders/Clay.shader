@@ -128,7 +128,7 @@ Shader "Hidden/Clay"
                 float3 pos_vs = ComputeViewSpacePosition(IN.texcoord, depth, UNITY_MATRIX_I_P);
 
                 float3 n = cross(ddx(pos_vs), ddy(pos_vs));
-                n = normalize(mul(transpose(UNITY_MATRIX_I_V), float4(n, 0)).rgb);
+                n = normalize(mul(transpose(UNITY_MATRIX_V), float4(n, 0)).rgb);
                 float3 albedo = clay_color.rgb;
 
                 // ライト・視線方向をビュー空間に変換

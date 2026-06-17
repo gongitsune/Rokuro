@@ -25,13 +25,13 @@ Shader "Unlit/PosTest"
             struct appdata
             {
                 float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
+                float3 normal : NORMAL;
             };
 
             struct v2f
             {
                 float4 vertex : SV_POSITION;
-                float3 uv : TEXCOORD0;
+                float3 normal : NORMAL;
             };
 
             sampler2D _MainTex;
@@ -41,13 +41,17 @@ Shader "Unlit/PosTest"
             {
                 v2f o;
                 o.vertex = TransformObjectToHClip(v.vertex.xyz);
-                o.uv = mul(UNITY_MATRIX_M, float4(v.vertex.xyz, 1.0)).xyz;
+                o.normal = v.normal;
                 return o;
             }
 
             float4 frag(v2f i) : SV_Target
             {
-                return float4(i.uv.xyz, 1.0);
+                float depth = i.vertex.z;
+                float3 pos_vs = ComputeViewSpacePosition(i.vertex.xy / _ScreenParams.xy, i.vertex.z, UNITY_MATRIX_I_P);
+                float3 n = cross(ddx(pos_vs), ddy(pos_vs));
+                n = normalize(mul(transpose(UNITY_MATRIX_V), float4(n, 0)).rgb);
+                return float4(n, 1.0);
             }
             ENDHLSL
         }
