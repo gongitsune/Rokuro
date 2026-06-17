@@ -82,7 +82,7 @@ namespace Features.Clay.Scripts
         {
             _counterBuffer.SetCounterValue(0);
 
-            _compute.SetInts(Uniforms.n_grid, _desc.gridResolution);
+            _compute.SetInt(Uniforms.n_grid, _desc.gridResolution);
             _compute.SetInt(Uniforms.max_triangle, _desc.triangleBudget);
             _compute.SetFloat(Uniforms.scale, _desc.scale);
             _compute.SetFloat(Uniforms.iso_value, _desc.isoValue);
@@ -96,7 +96,7 @@ namespace Features.Clay.Scripts
 
             // Bounding box
             var ext = new float3(_desc.gridResolution) * _desc.scale;
-            mesh.bounds = new Bounds(Vector3.zero, ext);
+            Mesh.bounds = new Bounds(Vector3.zero, ext);
         }
 
         #endregion
@@ -130,7 +130,7 @@ namespace Features.Clay.Scripts
             Debug.Log("[ClayMc] unified mc grid feature disabled. Using separate mc grid buffer.");
             computeShader.DisableKeyword("UNIFIED_MC_GRID");
             computeShader.SetInt(ClayCompute.Uniforms.n_mc_grid, _desc.gridResolution);
-            computeShader.SetFloat(ClayCompute.Uniforms.inv_mc_dx, _desc.gridResolution / (float)mpmGridRes);
+            computeShader.SetFloat(ClayCompute.Uniforms.inv_mc_dx, 1f / _desc.gridResolution);
             computeShader.SetBuffer(ClayCompute.Kernels.clear_grid, ClayCompute.Uniforms.mc_grid, _mcGridBuf);
             computeShader.SetBuffer(ClayCompute.Kernels.particle_to_grid, ClayCompute.Uniforms.mc_grid, _mcGridBuf);
         }
@@ -154,45 +154,44 @@ namespace Features.Clay.Scripts
 
         #region Mesh Objects
 
-        public Mesh mesh { get; private set; }
+        public Mesh Mesh { get; private set; }
         private GraphicsBuffer _vertexBuffer, _indexBuffer;
 
         private void AllocateMesh(int vertexCount)
         {
-            mesh = new Mesh
+            Mesh = new Mesh
             {
                 name = "Clay Marching Cubes Mesh"
             };
 
             // We want GraphicsBuffer access as Raw (ByteAddress) buffers.
-            mesh.indexBufferTarget |= GraphicsBuffer.Target.Raw;
-            mesh.vertexBufferTarget |= GraphicsBuffer.Target.Raw;
+            Mesh.indexBufferTarget |= GraphicsBuffer.Target.Raw;
+            Mesh.vertexBufferTarget |= GraphicsBuffer.Target.Raw;
 
             // Vertex position: float32 x 3
-            var vp = new VertexAttributeDescriptor
-                (VertexAttribute.Position);
+            var vp = new VertexAttributeDescriptor(VertexAttribute.Position);
 
             // Vertex normal: float32 x 3
-            var vn = new VertexAttributeDescriptor
-                (VertexAttribute.Normal);
+            var vn = new VertexAttributeDescriptor(VertexAttribute.Normal);
 
             // Vertex/index buffer formats
-            mesh.SetVertexBufferParams(vertexCount, vp, vn);
-            mesh.SetIndexBufferParams(vertexCount, IndexFormat.UInt32);
+            Mesh.SetVertexBufferParams(vertexCount, vp, vn);
+            Mesh.SetIndexBufferParams(vertexCount, IndexFormat.UInt32);
 
             // Submesh initialization
-            mesh.SetSubMesh(0, new SubMeshDescriptor(0, vertexCount), MeshUpdateFlags.DontRecalculateBounds);
+            Mesh.subMeshCount = 1;
+            Mesh.SetSubMesh(0, new SubMeshDescriptor(0, vertexCount), MeshUpdateFlags.DontRecalculateBounds);
 
             // GraphicsBuffer references
-            _vertexBuffer = mesh.GetVertexBuffer(0);
-            _indexBuffer = mesh.GetIndexBuffer();
+            _vertexBuffer = Mesh.GetVertexBuffer(0);
+            _indexBuffer = Mesh.GetIndexBuffer();
         }
 
         private void ReleaseMesh()
         {
             _vertexBuffer.Dispose();
             _indexBuffer.Dispose();
-            Object.Destroy(mesh);
+            Object.Destroy(Mesh);
         }
 
         #endregion

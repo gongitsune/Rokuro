@@ -35,7 +35,7 @@ RWStructuredBuffer<uint> counter; // used only for counting
 // Grid space to object space transformation
 float3 transform_point(float3 p)
 {
-    return (p + 0.5 - n_grid / 2) * scale;
+    return p * scale;
 }
 
 

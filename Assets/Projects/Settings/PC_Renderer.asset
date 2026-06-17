@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d3b9e27d2a46c2af9cb7ebd6d5b985, type: 3}
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
-  m_Active: 0
+  m_Active: 1
   radius: 0.04
   maxFilterSize: 32
   clayColor: {r: 0.8, g: 0.4, b: 0.3, a: 1}

@@ -1,8 +1,8 @@
-using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
 {
+    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class ClayManager : MonoBehaviour
     {
         [SerializeField] private ClayCompute.Desc computeDesc;
@@ -17,22 +17,21 @@ namespace Features.Clay.Scripts
         private ClayMc _clayMc;
         private ClayCompute _compute;
         private ClayGridVelRenderer _gridVelRenderer;
-        [ReadOnly] [ShowInInspector] private Mesh _mesh;
         private ClayParticleRenderer _particleRenderer;
-        private ClayRenderer _renderer;
 
         private void Start()
         {
             _clayMc = new ClayMc(clayMcDesc);
             _compute = new ClayCompute(computeDesc, _clayMc);
-            // _renderer = new ClayRenderer(rendererDesc, _compute, transform);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
             _clayForce = new ClayForce(clayForceDesc, transform);
+            _ = new ClayRenderer(rendererDesc, _compute, transform);
 
             _compute.Reset();
 
-            _mesh = _clayMc.mesh;
+            if (TryGetComponent(out MeshFilter meshFilter))
+                meshFilter.sharedMesh = _clayMc.Mesh;
         }
 
         private void Update()
