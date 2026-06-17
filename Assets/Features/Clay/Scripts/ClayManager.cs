@@ -11,6 +11,7 @@ namespace Features.Clay.Scripts
         [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
         [SerializeField] private ClayForce.Desc clayForceDesc;
         [SerializeField] private bool debugDraw = true;
+        [SerializeField] private float rotateSpeed = 0.1f;
 
         private ClayForce _clayForce;
         private ClayCompute _compute;
@@ -34,6 +35,8 @@ namespace Features.Clay.Scripts
 
             _compute.SetObjectForces(_clayForce.GetActiveForces(), _clayForce.GetActiveForceCount());
             _compute.Tick();
+
+            rendererDesc.renderFeature.RotateClay(rotateSpeed * Time.deltaTime);
 
             if (debugDraw)
                 _gridVelRenderer.Draw();

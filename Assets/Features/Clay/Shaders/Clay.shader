@@ -65,9 +65,10 @@ Shader "Hidden/Clay"
                 float3 corner = float3(quad[q_id] * radius, 0.0);
                 float2 uv = quad[q_id] + 0.5;
 
-                float3 p_pos = particle_pos[pid];
+                float3 p_pos = particle_pos[pid] - 0.5;
                 float4 q = rotate_angle_axis(yaw_rad, float3(0, 1, 0));
                 p_pos = rotate_vector(p_pos, q);
+                p_pos += 0.5;
 
                 p_pos = mul(object_to_world, float4(p_pos, 1.0)).xyz;
                 float3 view_pos = mul(UNITY_MATRIX_V, float4(p_pos, 1.0)).xyz;

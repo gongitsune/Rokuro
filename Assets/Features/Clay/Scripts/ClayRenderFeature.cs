@@ -48,6 +48,8 @@ namespace Features.Clay.Scripts
 
         public void RotateClay(float angleRad)
         {
+            if (!_mat.Material) return;
+
             _angleRad += angleRad;
             _mat.SetFloat(Uniforms.yaw_rad, _angleRad);
         }
