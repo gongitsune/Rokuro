@@ -648,7 +648,7 @@ MonoBehaviour:
       m_Bits: 1
     maxObjectsDetected: 12
     influenceRadius: 0.087
-    pushStrength: 297
+    pushStrength: 43
   debugDraw: 0
 --- !u!4 &404776771
 Transform:
