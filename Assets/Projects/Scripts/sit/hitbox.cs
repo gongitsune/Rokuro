@@ -37,8 +37,7 @@ public class hitbox : MonoBehaviour
             transformer.QueueTransformation(rotateData);
 
             moveProvider.moveSpeed = 0f; //ƒJƒƒ‰‚ÌˆÚ“®‘¬“x‚ğ0‚ÉŒÅ’è
-            //transform.position = colliderCenter + offset;
-            //xr.transform.rotation = Quaternion.Euler(0f,180f,0f);
+            moveProvider.useGravity = false;
         }
     }
 }
