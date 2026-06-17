@@ -56,7 +56,7 @@ namespace Features.Clay.Scripts
         private readonly GraphicsBuffer _objectForcesBuf;
         private readonly GraphicsBuffer _posBuf, _particleBuf;
 
-        public ClayCompute(Desc desc, ClayMc clayMc)
+        public ClayCompute(Desc desc)
         {
             _desc = desc;
             _computeShader = new ComputeShaderWrapper<Kernels, Uniforms>(desc.computeShader);
@@ -93,8 +93,6 @@ namespace Features.Clay.Scripts
 
             _computeShader.SetBuffer(Kernels.reset, Uniforms.x, _posBuf);
             _computeShader.SetBuffer(Kernels.reset, Uniforms.particles, _particleBuf);
-
-            clayMc.SetupMcGridForMpmCompute(_computeShader, _gridMBuf, desc.gridResolution);
         }
 
         public int GridResolution => _desc.gridResolution;
