@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e32e72b6a3f58a24c9033e2b9275eea0, type: 3}
   m_Name: ScreenSpaceShadows
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ScreenSpaceShadows
-  m_Active: 1
+  m_Active: 0
   m_Shader: {fileID: 4800000, guid: 0f854b35a0cf61a429bd5dcfea30eddd, type: 3}
 --- !u!114 &-1703337350216040766
 MonoBehaviour:
@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d3b9e27d2a46c2af9cb7ebd6d5b985, type: 3}
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
-  m_Active: 1
+  m_Active: 0
   radius: 0.04
   maxFilterSize: 32
   clayColor: {r: 0.8, g: 0.4, b: 0.3, a: 1}

@@ -116,12 +116,12 @@ void mesh_reconstruction(uint3 id : SV_DispatchThreadID)
 
     // Voxel samples at each cube vertex
     float4 samples[8];
-    for (uint i = 0; i < 8; i++)
+    uint i;
+    for (i = 0; i < 8; i++)
         samples[i] = voxel_value_with_gradient(id + cube_vertex(i));
 
     // Cube configuration selector
     // (initialized as a bit field of vertex binary states)
-    int i;
     uint selector = 0;
     for (i = 0; i < 8; i++)
         selector |= (samples[i].w < iso_value) << i;

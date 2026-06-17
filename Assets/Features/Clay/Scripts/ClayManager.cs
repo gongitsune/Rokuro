@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -16,6 +17,7 @@ namespace Features.Clay.Scripts
         private ClayMc _clayMc;
         private ClayCompute _compute;
         private ClayGridVelRenderer _gridVelRenderer;
+        [ReadOnly] [ShowInInspector] private Mesh _mesh;
         private ClayParticleRenderer _particleRenderer;
         private ClayRenderer _renderer;
 
@@ -23,12 +25,14 @@ namespace Features.Clay.Scripts
         {
             _clayMc = new ClayMc(clayMcDesc);
             _compute = new ClayCompute(computeDesc, _clayMc);
-            _renderer = new ClayRenderer(rendererDesc, _compute, transform);
+            // _renderer = new ClayRenderer(rendererDesc, _compute, transform);
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
             _clayForce = new ClayForce(clayForceDesc, transform);
 
             _compute.Reset();
+
+            _mesh = _clayMc.mesh;
         }
 
         private void Update()
@@ -37,6 +41,8 @@ namespace Features.Clay.Scripts
 
             _compute.SetObjectForces(_clayForce.GetActiveForces(), _clayForce.GetActiveForceCount());
             _compute.Tick();
+
+            _clayMc.ReconstructMesh();
 
             if (debugDraw)
                 _gridVelRenderer.Draw();
