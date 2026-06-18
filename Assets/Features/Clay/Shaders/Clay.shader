@@ -129,22 +129,21 @@ Shader "Hidden/Clay"
                 if (depth <= 0.0) discard;
                 #else
                 if (depth >= 1.0) discard;
+                depth = lerp(UNITY_NEAR_CLIP_VALUE, 1, depth);
                 #endif
 
-                float3 pos_vs = ComputeViewSpacePosition(IN.texcoord, depth, UNITY_MATRIX_I_P);
+                float3 pos_ws = ComputeWorldSpacePosition(IN.texcoord, depth, UNITY_MATRIX_I_VP);
 
-                float3 n = cross(ddx(pos_vs), ddy(pos_vs));
-                n = normalize(mul(transpose(UNITY_MATRIX_V), float4(n, 0)).rgb);
+                float3 n_ws = normalize(cross(ddy(pos_ws), ddx(pos_ws)));
                 float3 albedo = clay_color.rgb;
 
-                // ライト・視線方向をビュー空間に変換
                 float3 l = normalize(_MainLightPosition.xyz);
-                float3 v = float3(0, 0, 1); // ビュー空間では視線はZ+
+                float3 v = normalize(_WorldSpaceCameraPos - pos_ws);
                 float3 h = normalize(l + v);
 
-                float n_dot_l = dot(n, l);
+                float n_dot_l = dot(n_ws, l);
                 float3 diffuse = (n_dot_l * 0.5 + 0.5) * _MainLightColor.rgb;
-                float3 specular = pow(max(0.0, dot(n, h)), 80.0) * _MainLightColor.rgb * .1;
+                float3 specular = pow(max(0.0, dot(n_ws, h)), 80.0) * _MainLightColor.rgb * .2;
                 return float4(albedo * diffuse + specular, 1.0);
             }
             ENDHLSL

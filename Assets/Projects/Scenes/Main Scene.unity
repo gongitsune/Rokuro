@@ -643,7 +643,6 @@ MonoBehaviour:
     material: {fileID: 2100000, guid: 671b80febbefb428280a3dd6046ecfbf, type: 2}
   clayForceDesc:
     showGizmos: 1
-    gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
     detectionLayerMask:
       serializedVersion: 2
       m_Bits: 1
@@ -651,6 +650,7 @@ MonoBehaviour:
     influenceRadius: 0.087
     pushStrength: 43
   debugDraw: 0
+  rotateSpeed: 0.1
 --- !u!4 &404776771
 Transform:
   m_ObjectHideFlags: 0
