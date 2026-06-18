@@ -23,6 +23,10 @@ namespace Features.Clay.Scripts
             direction,
 
             clay_color,
+            shadow_step_size,
+            shadow_bias,
+            shadow_intensity,
+            shadow_step_count,
 
             object_to_world,
 
@@ -36,6 +40,14 @@ namespace Features.Clay.Scripts
         [Title("Shading")] [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private Texture2D clayMainTex;
         [SerializeField] private Texture2D clayNormalTex;
+
+        [Title("Screen Space Shadow")] [SerializeField]
+        private float shadowStepSize = 0.02f;
+
+        [SerializeField] private float shadowBias = 0.01f;
+        [SerializeField] private float shadowIntensity = 0.5f;
+        [SerializeField] private int shadowStepCount = 16;
+
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
 
@@ -72,7 +84,10 @@ namespace Features.Clay.Scripts
             _mat.SetFloat(Uniforms.mu, radius);
             _mat.SetFloat(Uniforms.sigma_world, radius * 0.7f);
             _mat.SetFloat(Uniforms.max_filter_radius, maxFilterSize);
-
+            _mat.SetFloat(Uniforms.shadow_step_size, shadowStepSize);
+            _mat.SetFloat(Uniforms.shadow_bias, shadowBias);
+            _mat.SetFloat(Uniforms.shadow_intensity, shadowIntensity);
+            _mat.SetInt(Uniforms.shadow_step_count, shadowStepCount);
             _mat.SetColor(Uniforms.clay_color, clayColor);
 
             _clayDepthPass.Setup(particlePosBuffer, root);

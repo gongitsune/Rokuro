@@ -32,7 +32,6 @@ Shader "Hidden/Clay"
             #pragma fragment frag
 
             #pragma multi_compile_instancing
-            #pragma instancing_options renderingLayer
 
             struct attributes
             {
@@ -120,11 +119,14 @@ Shader "Hidden/Clay"
             #pragma vertex   Vert
             #pragma fragment frag
 
+            #include "Assets/Features/Clay/Shaders/ScreenSpaceShadow.hlsl"
+
             float4 frag(Varyings IN) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN);
 
                 float depth = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, IN.texcoord, 0).r;
+
                 #if defined(UNITY_REVERSED_Z)
                 if (depth <= 0.0) discard;
                 #else
@@ -141,10 +143,15 @@ Shader "Hidden/Clay"
                 float3 v = normalize(_WorldSpaceCameraPos - pos_ws);
                 float3 h = normalize(l + v);
 
+                float shadow = screen_space_shadow(pos_ws, l);
+                return float4(shadow, shadow, shadow, 1.0);
+
                 float n_dot_l = dot(n_ws, l);
                 float3 diffuse = (n_dot_l * 0.5 + 0.5) * _MainLightColor.rgb;
                 float3 specular = pow(max(0.0, dot(n_ws, h)), 80.0) * _MainLightColor.rgb * .2;
-                return float4(albedo * diffuse + specular, 1.0);
+                float3 col = albedo * diffuse * shadow + specular;
+
+                return float4(col, 1.0);
             }
             ENDHLSL
         }

@@ -486,7 +486,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 100000
+    particleCount: 20000
     gridResolution: 96
     dt: 0.00015
     maxIter: 25

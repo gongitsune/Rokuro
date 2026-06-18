@@ -11,6 +11,11 @@ int direction; // 0=水平, 1=垂直, 2=2D(クリーンアップ)
 
 float yaw_rad; // Yaw方向の回転
 
+float shadow_step_size;
+float shadow_bias;
+float shadow_intensity;
+int shadow_step_count;
+
 float4 clay_color;
 
 float4x4 object_to_world;
