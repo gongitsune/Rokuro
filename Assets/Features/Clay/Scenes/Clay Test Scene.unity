@@ -525,7 +525,6 @@ MonoBehaviour:
     influenceRadius: 0.087
     pushStrength: 291
   debugDraw: 0
-  rotateSpeed: 0
 --- !u!33 &286983444
 MeshFilter:
   m_ObjectHideFlags: 0
