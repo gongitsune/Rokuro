@@ -30,7 +30,11 @@ namespace Features.Clay.Scripts
 
             object_to_world,
 
-            yaw_rad
+            yaw_rad,
+
+            normal_strength,
+            normal_tiling,
+            normal_map
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
@@ -47,6 +51,10 @@ namespace Features.Clay.Scripts
         [SerializeField] private float shadowBias = 0.01f;
         [SerializeField] private float shadowIntensity = 0.5f;
         [SerializeField] private int shadowStepCount = 16;
+
+        [Title("Normal Map")] [SerializeField] private float normalStrength = 0.5f;
+        [SerializeField] private float normalTiling = 1.0f;
+        [SerializeField] private Texture2D normalMapTex;
 
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
@@ -78,6 +86,7 @@ namespace Features.Clay.Scripts
             await UniTask.Yield();
 
             _mat.SetBuffer(Uniforms.particle_pos, particlePosBuffer);
+            _mat.SetTexture(Uniforms.normal_map, normalMapTex);
 
             _mat.SetFloat(Uniforms.radius, radius);
             _mat.SetFloat(Uniforms.delta, radius * 10f);
@@ -89,6 +98,8 @@ namespace Features.Clay.Scripts
             _mat.SetFloat(Uniforms.shadow_intensity, shadowIntensity);
             _mat.SetInt(Uniforms.shadow_step_count, shadowStepCount);
             _mat.SetColor(Uniforms.clay_color, clayColor);
+            _mat.SetFloat(Uniforms.normal_strength, normalStrength);
+            _mat.SetFloat(Uniforms.normal_tiling, normalTiling);
 
             _clayDepthPass.Setup(particlePosBuffer, root);
         }

@@ -36,6 +36,9 @@ MonoBehaviour:
   shadowBias: 0.01
   shadowIntensity: 0.5
   shadowStepCount: 16
+  normalStrength: 0.35
+  normalTiling: 1
+  normalMapTex: {fileID: 2800000, guid: f769340f4babb461eb81c454253616f2, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,8 +1,14 @@
 #ifndef SCREEN_SPACE_SHADOW
 #define SCREEN_SPACE_SHADOW
 
-#include "Assets/Features/Clay/Shaders/Parameters.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+CBUFFER_START(ScreenSpaceShadow)
+    float shadow_step_size;
+    int shadow_step_count;
+    float shadow_bias;
+    float shadow_intensity;
+CBUFFER_END
 
 float screen_space_shadow(float3 position_ws, float3 light_dir_ws)
 {
