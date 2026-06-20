@@ -34,7 +34,13 @@ namespace Features.Clay.Scripts
 
             normal_strength,
             normal_tiling,
-            normal_map
+            normal_map,
+
+            gtao_radius_ws,
+            gtao_slice_count,
+            gtao_step_count,
+            gtao_intensity,
+            gtao_thickness_ws
         }
 
         [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
@@ -51,6 +57,12 @@ namespace Features.Clay.Scripts
         [SerializeField] private float shadowBias = 0.01f;
         [SerializeField] private float shadowIntensity = 0.5f;
         [SerializeField] private int shadowStepCount = 16;
+
+        [Title("GTAO")] [SerializeField] private float gtaoRadius = 0.05f;
+        [SerializeField] private int gtaoSliceCount = 4;
+        [SerializeField] private int gtaoStepCount = 8;
+        [SerializeField] private float gtaoIntensity = 1.0f;
+        [SerializeField] private float gtaoThickness = 0.1f;
 
         [Title("Normal Map")] [SerializeField] private float normalStrength = 0.5f;
         [SerializeField] private float normalTiling = 1.0f;
@@ -100,6 +112,11 @@ namespace Features.Clay.Scripts
             _mat.SetColor(Uniforms.clay_color, clayColor);
             _mat.SetFloat(Uniforms.normal_strength, normalStrength);
             _mat.SetFloat(Uniforms.normal_tiling, normalTiling);
+            _mat.SetFloat(Uniforms.gtao_radius_ws, gtaoRadius);
+            _mat.SetInt(Uniforms.gtao_slice_count, gtaoSliceCount);
+            _mat.SetInt(Uniforms.gtao_step_count, gtaoStepCount);
+            _mat.SetFloat(Uniforms.gtao_intensity, gtaoIntensity);
+            _mat.SetFloat(Uniforms.gtao_thickness_ws, gtaoThickness);
 
             _clayDepthPass.Setup(particlePosBuffer, root);
         }

@@ -142,6 +142,7 @@ Shader "Hidden/Clay"
             #pragma fragment frag
 
             #include "Assets/Features/Clay/Shaders/ScreenSpaceShadow.hlsl"
+            #include "Assets/Features/Clay/Shaders/gtao.hlsl"
 
             CBUFFER_START(ClayParams)
                 float4 clay_color;
@@ -203,12 +204,16 @@ Shader "Hidden/Clay"
                 float3 v = normalize(_WorldSpaceCameraPos - pos_ws);
                 float3 h = normalize(l + v);
 
+                // float shadow = screen_space_shadow(pos_ws, l);
+                float2 pixel_coord = IN.texcoord * _ScaledScreenParams.xy;
+                float ao = compute_gtao(IN.texcoord, pos_ws, n_final, v, pixel_coord);
+
                 float n_dot_l = dot(n_final, l);
                 float3 diffuse = (n_dot_l * 0.5 + 0.5) * _MainLightColor.rgb;
-                float3 specular = pow(max(0.0, dot(n_final, h)), 80.0) * _MainLightColor.rgb * .2;
+                float3 specular = pow(max(0.0, dot(n_final, h)), 80.0) * _MainLightColor.rgb * .1;
                 float3 col = albedo * diffuse + specular;
 
-                return float4(col, 1.0);
+                return float4(col * ao, 1.0);
             }
             ENDHLSL
         }

@@ -486,7 +486,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 100000
+    particleCount: 20000
     gridResolution: 96
     dt: 0.00015
     maxIter: 25
@@ -503,7 +503,7 @@ MonoBehaviour:
     dpCohesion: 2
     dpHardening: 0.4
     damping: 0.99
-    rotateSpeed: 10
+    rotateSpeed: 0
   clayMcDesc:
     gridResolution: 96
     triangleBudget: 65536
@@ -525,7 +525,7 @@ MonoBehaviour:
     influenceRadius: 0.087
     pushStrength: 291
   debugDraw: 0
-  rotateSpeed: 0.1
+  rotateSpeed: 0
 --- !u!33 &286983444
 MeshFilter:
   m_ObjectHideFlags: 0
