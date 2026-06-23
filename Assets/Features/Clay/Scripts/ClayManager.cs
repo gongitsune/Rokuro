@@ -6,7 +6,6 @@ namespace Features.Clay.Scripts
     public class ClayManager : MonoBehaviour
     {
         [SerializeField] private ClayCompute.Desc computeDesc;
-        [SerializeField] private ClayMc.Desc clayMcDesc;
         [SerializeField] private ClayRenderer.Desc rendererDesc;
         [SerializeField] private ClayParticleRenderer.Desc particleRendererDesc;
         [SerializeField] private ClayGridVelRenderer.Desc gridVelRendererDesc;
@@ -51,8 +50,8 @@ namespace Features.Clay.Scripts
         private void OnGUI()
         {
             if (GUILayout.Button("Construct SDF"))
-                if (TryGetComponent(out SdfConstructor constructor))
-                    constructor.ConstructSdf(_compute.GetParticlePosBuffer()).Forget();
+                if (TryGetComponent(out ClayToMesh clayToMesh))
+                    clayToMesh.BuildMesh(_compute.GetParticlePosBuffer()).Forget();
         }
 
         private void OnDrawGizmos()

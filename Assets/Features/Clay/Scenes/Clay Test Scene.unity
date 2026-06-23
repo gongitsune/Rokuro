@@ -485,7 +485,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayMpmManager
   computeDesc:
     computeShader: {fileID: 7200000, guid: 25c479b788044d489d41ec6028d9fed8, type: 3}
-    particleCount: 20000
+    particleCount: 100000
     gridResolution: 96
     dt: 0.00015
     maxIter: 25
@@ -503,12 +503,6 @@ MonoBehaviour:
     dpHardening: 0.4
     damping: 0.99
     rotateSpeed: 0
-  clayMcDesc:
-    gridResolution: 96
-    triangleBudget: 65536
-    isoValue: 0.75
-    scale: 0.015625
-    computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
   rendererDesc:
     renderFeature: {fileID: -1703337350216040766, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   particleRendererDesc:
@@ -537,9 +531,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 985da7ddfd2945a58cb4bd84811028df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.SdfConstructor
-  aabbPaddingCells: 1
-  gridRes: 64
+  gridRes: 128
   kernelRadius: 4
+  triangleBudget: 65536
+  isoValue: 0.5
+  mcScale: 0.020833334
+  computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
 --- !u!1 &287357689
 GameObject:
   m_ObjectHideFlags: 0
