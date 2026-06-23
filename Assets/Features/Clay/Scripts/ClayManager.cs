@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -45,6 +46,13 @@ namespace Features.Clay.Scripts
         private void OnDestroy()
         {
             _compute.Dispose();
+        }
+
+        private void OnGUI()
+        {
+            if (GUILayout.Button("Construct SDF"))
+                if (TryGetComponent(out SdfConstructor constructor))
+                    constructor.ConstructSdf(_compute.GetParticlePosBuffer()).Forget();
         }
 
         private void OnDrawGizmos()

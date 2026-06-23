@@ -37,8 +37,8 @@ MonoBehaviour:
   shadowIntensity: 0.5
   shadowStepCount: 16
   gtaoRadius: 0.083333336
-  gtaoSliceCount: 2
-  gtaoStepCount: 4
+  gtaoSliceCount: 4
+  gtaoStepCount: 8
   gtaoIntensity: 0.8
   gtaoThickness: 0.020833334
   normalStrength: 0.35
