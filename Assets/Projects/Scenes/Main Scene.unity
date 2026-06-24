@@ -629,12 +629,6 @@ MonoBehaviour:
     dpHardening: 0.4
     damping: 0.99
     rotateSpeed: 10
-  clayMcDesc:
-    gridResolution: 96
-    triangleBudget: 65536
-    isoValue: 0.1
-    scale: 0.020833334
-    computeShader: {fileID: 0}
   rendererDesc:
     renderFeature: {fileID: -1703337350216040766, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   particleRendererDesc:
@@ -660,7 +654,7 @@ Transform:
   m_GameObject: {fileID: 404776769}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.198, y: 1.2493, z: -4.739}
+  m_LocalPosition: {x: -0.198, y: 1.1293, z: -4.739}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2963,7 +2957,7 @@ Transform:
   m_GameObject: {fileID: 591039678053021654}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 0.281, z: 1.996}
+  m_LocalPosition: {x: 0, y: 0.281, z: -1.401}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

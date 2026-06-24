@@ -598,6 +598,7 @@ MonoBehaviour:
   - {fileID: -5406790542127227900}
   - {fileID: 4872809887645785145}
   - {fileID: 2144004049012437532}
+  - {fileID: 8285383633157163206}
   - {fileID: -5705741537813662163}
   - {fileID: 7295100690191439567}
   - {fileID: 7659015046793312228}
@@ -623,6 +624,7 @@ MonoBehaviour:
   - {fileID: 5551295261421525685}
   - {fileID: 4167296455170926941}
   - {fileID: -1674067308529085638}
+  - {fileID: 5503059275836299858}
   customLoaderName: 
   m_renderMode: 1
   m_latencyOptimization: 0
@@ -686,7 +688,6 @@ MonoBehaviour:
   m_Name: HandTracking Standalone
   m_EditorClassIdentifier: Unity.XR.Hands::UnityEngine.XR.Hands.OpenXR.HandTracking
   m_enabled: 0
-  <failedInitialization>k__BackingField: 0
   nameUi: Hand Tracking Subsystem
   version: 0.0.1
   featureIdInternal: com.unity.openxr.feature.input.handtrackingsubsystem
@@ -697,7 +698,6 @@ MonoBehaviour:
   required: 0
   customRuntimeLoaderName: 
   m_AutoStartSubsystem: 1
-  m_ShouldBeRunning: 0
 --- !u!114 &5551295261421525685
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -871,7 +871,6 @@ MonoBehaviour:
   m_Name: MetaHandTrackingAim Standalone
   m_EditorClassIdentifier: Unity.XR.Hands::UnityEngine.XR.Hands.OpenXR.MetaHandTrackingAim
   m_enabled: 0
-  <failedInitialization>k__BackingField: 0
   nameUi: Meta Hand Tracking Aim
   version: 0.0.1
   featureIdInternal: com.unity.openxr.feature.input.metahandtrackingaim
