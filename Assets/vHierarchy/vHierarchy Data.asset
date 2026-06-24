@@ -16,4 +16,6 @@ MonoBehaviour:
     keys: []
     values: []
   bookmarks: []
-  bookmarkedScenePaths: []
+  bookmarkedScenePaths:
+  - Assets/Samples/XR Interaction Toolkit/3.4.0/World Space UI/DemoScene.unity
+  - Assets/Projects/Scenes/Main Scene.unity
