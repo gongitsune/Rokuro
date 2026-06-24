@@ -47,13 +47,6 @@ namespace Features.Clay.Scripts
             _compute.Dispose();
         }
 
-        private void OnGUI()
-        {
-            if (GUILayout.Button("Construct SDF"))
-                if (TryGetComponent(out ClayToMesh clayToMesh))
-                    clayToMesh.BuildMesh(_compute.GetParticlePosBuffer()).Forget();
-        }
-
         private void OnDrawGizmos()
         {
             if (!Application.isPlaying) return;

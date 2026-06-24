@@ -11,7 +11,7 @@ namespace Features.Clay.Scripts
     public class ClayCompute : IDisposable
     {
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        public enum Kernels
+        private enum Kernels
         {
             clear_grid,
             particle_to_grid,
@@ -21,7 +21,7 @@ namespace Features.Clay.Scripts
         }
 
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        public enum Uniforms
+        private enum Uniforms
         {
             n_particles,
             n_grid,
@@ -45,10 +45,7 @@ namespace Features.Clay.Scripts
             grid_v,
             grid_m,
             object_forces,
-            object_force_count,
-            n_mc_grid,
-            inv_mc_dx,
-            mc_grid
+            object_force_count
         }
 
         private readonly ComputeShaderWrapper<Kernels, Uniforms> _computeShader;
