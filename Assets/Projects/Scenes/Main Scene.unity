@@ -782,7 +782,7 @@ MonoBehaviour:
     influenceRadius: 0.087
     pushStrength: 43
   debugDraw: 0
-  rotateSpeed: 0.1
+  rotateSpeed: 0.6
 --- !u!4 &404776771
 Transform:
   m_ObjectHideFlags: 0
@@ -813,6 +813,7 @@ MonoBehaviour:
   gridRes: 128
   kernelRadius: 4
   triangleBudget: 65536
+  blurIterations: 2
   isoValueScale: 0.1
   mcScale: 0.020833334
   computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
