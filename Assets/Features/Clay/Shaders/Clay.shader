@@ -148,6 +148,8 @@ Shader "Hidden/Clay"
                 float normal_strength;
                 float normal_tiling;
                 float yaw_rad;
+
+                float4x4 world_to_object;
             CBUFFER_END
 
             TEXTURE2D(normal_map);
@@ -191,11 +193,12 @@ Shader "Hidden/Clay"
                 #endif
 
                 float3 pos_ws = ComputeWorldSpacePosition(IN.texcoord, depth, UNITY_MATRIX_I_VP);
-                float3 pos_ws_rot = rotate_vector(pos_ws - 0.5,
+                float3 pos_os = mul(world_to_object, float4(pos_ws, 1.0)).xyz;
+                float3 pos_os_rot = rotate_vector(pos_os - 0.5,
                                                   rotate_angle_axis(-yaw_rad, float3(0, 1, 0))
                 ) + 0.5;
                 float3 n_ws = normalize(cross(ddy(pos_ws), ddx(pos_ws)));
-                float3 n_final = sample_triplanar_normal(pos_ws_rot, n_ws, normal_tiling, normal_strength);
+                float3 n_final = sample_triplanar_normal(pos_os_rot, n_ws, normal_tiling, normal_strength);
 
                 float3 albedo = clay_color.rgb;
 

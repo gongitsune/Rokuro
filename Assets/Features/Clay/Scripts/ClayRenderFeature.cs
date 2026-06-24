@@ -29,6 +29,7 @@ namespace Features.Clay.Scripts
             shadow_step_count,
 
             object_to_world,
+            world_to_object,
 
             yaw_rad,
 
@@ -78,12 +79,14 @@ namespace Features.Clay.Scripts
             CoreUtils.Destroy(_mat.Material);
         }
 
-        public void RotateClay(float angleRad)
+        public void RotateClay(float angleRad, Transform root)
         {
             if (!_mat.Material) return;
 
             AngleRad += angleRad;
             _mat.SetFloat(Uniforms.yaw_rad, AngleRad);
+            _mat.SetMatrix(Uniforms.object_to_world, root.localToWorldMatrix);
+            _mat.SetMatrix(Uniforms.world_to_object, root.worldToLocalMatrix);
         }
 
         public override void Create()
@@ -92,7 +95,7 @@ namespace Features.Clay.Scripts
             _clayDepthPass = new ClayDepthPass(_mat);
         }
 
-        public async UniTask Setup(GraphicsBuffer particlePosBuffer, Transform root)
+        public async UniTask Setup(GraphicsBuffer particlePosBuffer)
         {
             await UniTask.WaitUntil(() => _clayDepthPass != null);
             await UniTask.Yield();
@@ -118,7 +121,7 @@ namespace Features.Clay.Scripts
             _mat.SetFloat(Uniforms.gtao_intensity, gtaoIntensity);
             _mat.SetFloat(Uniforms.gtao_thickness_ws, gtaoThickness);
 
-            _clayDepthPass.Setup(particlePosBuffer, root);
+            _clayDepthPass.Setup(particlePosBuffer);
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

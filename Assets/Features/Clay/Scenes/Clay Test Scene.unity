@@ -532,9 +532,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.SdfConstructor
   gridRes: 128
-  kernelRadius: 8
+  kernelRadius: 4
   triangleBudget: 131072
-  isoValueScale: 0.1
+  blurIterations: 2
+  isoValueScale: 1
   mcScale: 0.020833334
   computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
 --- !u!1 &287357689
