@@ -141,7 +141,6 @@ Shader "Hidden/Clay"
             #pragma vertex   Vert
             #pragma fragment frag
 
-            #include "Assets/Features/Clay/Shaders/ScreenSpaceShadow.hlsl"
             #include "Assets/Features/Clay/Shaders/gtao.hlsl"
 
             CBUFFER_START(ClayParams)

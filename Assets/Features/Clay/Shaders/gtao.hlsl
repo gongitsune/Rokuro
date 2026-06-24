@@ -49,7 +49,7 @@ float search_horizon_cos(float2 uv, float2 dir_ss, float3 position_ws, float3 vi
         if (any(sample_uv < 0.0) || any(sample_uv > 1.0))
             continue;
 
-        float depth = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, sample_uv, 0).r;
+        float depth = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, sample_uv, 0).r;
         float3 sample_ws = ComputeWorldSpacePosition(sample_uv, depth, UNITY_MATRIX_I_VP);
 
         float3 horizon_vec = sample_ws - position_ws;
