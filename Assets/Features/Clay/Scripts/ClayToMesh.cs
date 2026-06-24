@@ -21,6 +21,8 @@ namespace Features.Clay.Scripts
         [Title("Marching Cubes")] [SerializeField]
         private int triangleBudget = 65536;
 
+        [SerializeField] private int blurIterations = 2;
+
         [SerializeField] private float isoValueScale = 0.1f;
         [SerializeField] private float mcScale = 1f / 96f * 2f;
         [SerializeField] private ComputeShader computeShader;
@@ -70,6 +72,8 @@ namespace Features.Clay.Scripts
             var count = positionsBuffer.count;
             var particleNative =
                 new NativeArray<float3>(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            var blurTempNative = new NativeArray<float>(densityNative.Length, Allocator.Persistent,
+                NativeArrayOptions.UninitializedMemory);
             var maxDensity = new NativeReference<float>(0, Allocator.Persistent);
 
             await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref particleNative, positionsBuffer);
@@ -82,12 +86,38 @@ namespace Features.Clay.Scripts
                 DensityGrid = densityNative,
                 MaxDensity = maxDensity
             };
+            var densityHandle = job.Schedule();
 
-            await job.Schedule();
+            // ブラーをイテレーション分チェーン
+            var readBuf = densityNative;
+            var writeBuf = blurTempNative;
+
+            var blurHandle = densityHandle;
+            for (var i = 0; i < blurIterations; i++)
+            {
+                var blurJob = new DensityBlurJob
+                {
+                    Input = readBuf,
+                    Output = writeBuf,
+                    GridRes = gridRes,
+                    KernelHalf = 1
+                };
+                blurHandle = blurJob.Schedule(gridRes * gridRes * gridRes, 64, blurHandle);
+
+                // ピンポン
+                (readBuf, writeBuf) = (writeBuf, readBuf);
+            }
+
+            await blurHandle;
+
+            if (blurIterations % 2 == 1)
+                // 奇数回だと結果が mBlurTemp に入っているのでコピージョブを挟む
+                blurTempNative.CopyTo(densityNative);
 
             var maxDensityValue = maxDensity.Value;
 
             particleNative.Dispose();
+            blurTempNative.Dispose();
             maxDensity.Dispose();
 
             return maxDensityValue;
@@ -158,7 +188,9 @@ namespace Features.Clay.Scripts
                             (zi + 0.5f) * cellSizeZ
                         );
 
-                        var r2 = math.lengthsq(cellPos - pos);
+                        var scale = 1f - 2f * KernelRadius;
+                        var scaledPos = pos * scale + KernelRadius;
+                        var r2 = math.lengthsq(cellPos - scaledPos);
                         if (r2 >= h2) continue;
 
                         // poly6 カーネル: (1 - r²/h²)³
@@ -172,6 +204,40 @@ namespace Features.Clay.Scripts
                 foreach (var f in DensityGrid)
                     if (f > MaxDensity.Value)
                         MaxDensity.Value = f;
+            }
+        }
+
+        [BurstCompile(FloatPrecision.Standard, FloatMode.Fast)]
+        private struct DensityBlurJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public NativeArray<float> Input;
+            [WriteOnly] public NativeArray<float> Output;
+            public int3 GridRes;
+            public int KernelHalf; // 1=3³, 2=5³
+
+            public void Execute(int flat)
+            {
+                int nx = GridRes.x, ny = GridRes.y, nz = GridRes.z;
+                var xi = flat % nx;
+                var yi = flat / nx % ny;
+                var zi = flat / (nx * ny);
+
+                float sum = 0f, weight = 0f;
+                for (var dz = -KernelHalf; dz <= KernelHalf; dz++)
+                for (var dy = -KernelHalf; dy <= KernelHalf; dy++)
+                for (var dx = -KernelHalf; dx <= KernelHalf; dx++)
+                {
+                    int nx2 = xi + dx, ny2 = yi + dy, nz2 = zi + dz;
+                    var density = nx2 < 0 || nx2 >= nx || ny2 < 0 || ny2 >= ny || nz2 < 0 || nz2 >= nz
+                        ? 0f
+                        : Input[nx2 + ny2 * nx + nz2 * nx * ny];
+                    // ガウス重み: 中心ほど強く
+                    var w = math.exp(-(dx * dx + dy * dy + dz * dz) * 0.5f);
+                    sum += density * w;
+                    weight += w;
+                }
+
+                Output[flat] = sum / weight;
             }
         }
 
