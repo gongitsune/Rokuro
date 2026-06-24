@@ -1,5 +1,5 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.61);">
-        <ui:Button text="Button" style="height: 22px; width: 62px; font-size: 7px;"/>
+    <ui:VisualElement name="VisualElement" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.61); width: 100px; height: 50px;">
+        <ui:Button text="終わる" style="height: 10px; width: 50px; font-size: 9px; -unity-text-align: middle-center; white-space: pre; top: 40px; left: 70px; -unity-font-definition: url(&quot;project://database/Assets/Projects/Font/YujiSyuku-Regular.ttf?fileID=12800000&amp;guid=8aa85b3d6c7143c4c9d1865709d72e4d&amp;type=3#YujiSyuku-Regular&quot;); transform-origin: center; translate: -49px -27px;"/>
     </ui:VisualElement>
 </ui:UXML>
