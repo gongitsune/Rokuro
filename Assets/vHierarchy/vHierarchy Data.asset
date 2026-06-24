@@ -19,3 +19,4 @@ MonoBehaviour:
   bookmarkedScenePaths:
   - Assets/Samples/XR Interaction Toolkit/3.4.0/World Space UI/DemoScene.unity
   - Assets/Projects/Scenes/Main Scene.unity
+  - Assets/Features/Clay/Scenes/Clay Test Scene.unity

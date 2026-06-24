@@ -650,6 +650,7 @@ GameObject:
   m_Component:
   - component: {fileID: 404776771}
   - component: {fileID: 404776770}
+  - component: {fileID: 404776772}
   m_Layer: 0
   m_Name: Clay
   m_TagString: Untagged
@@ -720,6 +721,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &404776772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 404776769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 985da7ddfd2945a58cb4bd84811028df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayToMesh
+  gridRes: 128
+  kernelRadius: 4
+  triangleBudget: 65536
+  isoValue: 0.5
+  mcScale: 0.020833334
+  computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
 --- !u!1 &479599526
 GameObject:
   m_ObjectHideFlags: 0

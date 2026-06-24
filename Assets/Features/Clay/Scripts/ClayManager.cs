@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Features.Clay.Scripts
@@ -54,5 +55,15 @@ namespace Features.Clay.Scripts
             _particleRenderer.OnDrawGizmos();
             _clayForce?.DrawGizmos();
         }
+
+
+#if UNITY_EDITOR
+        [Button]
+        private void DebugBuildMesh()
+        {
+            TryGetComponent(out ClayToMesh clayToMesh);
+            clayToMesh.BuildMesh(_compute.GetParticlePosBuffer()).Forget();
+        }
+#endif
     }
 }

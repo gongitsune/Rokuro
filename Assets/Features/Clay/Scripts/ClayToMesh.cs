@@ -21,9 +21,11 @@ namespace Features.Clay.Scripts
         [Title("Marching Cubes")] [SerializeField]
         private int triangleBudget = 65536;
 
-        [SerializeField] private float isoValue = 0.1f;
+        [SerializeField] private float isoValueScale = 0.1f;
         [SerializeField] private float mcScale = 1f / 96f * 2f;
         [SerializeField] private ComputeShader computeShader;
+
+        private float _isoValue;
 
         private void Start()
         {
@@ -46,7 +48,8 @@ namespace Features.Clay.Scripts
             var total = gridRes * gridRes * gridRes;
             var densityNative =
                 new NativeArray<float>(total, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            await CalcDensityField(positionsBuffer, densityNative);
+            var maxDensity = await CalcDensityField(positionsBuffer, densityNative);
+            _isoValue = maxDensity * isoValueScale;
             Log("Calculated density field.");
 
             AllocateBuffers(in densityNative);
@@ -62,11 +65,12 @@ namespace Features.Clay.Scripts
 
         #region Density Field
 
-        private async UniTask CalcDensityField(GraphicsBuffer positionsBuffer, NativeArray<float> densityNative)
+        private async UniTask<float> CalcDensityField(GraphicsBuffer positionsBuffer, NativeArray<float> densityNative)
         {
             var count = positionsBuffer.count;
             var particleNative =
                 new NativeArray<float3>(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            var maxDensity = new NativeReference<float>(0, Allocator.Persistent);
 
             await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref particleNative, positionsBuffer);
 
@@ -75,12 +79,18 @@ namespace Features.Clay.Scripts
                 Positions = particleNative,
                 GridRes = gridRes,
                 KernelRadius = kernelRadius / (float)gridRes,
-                DensityGrid = densityNative
+                DensityGrid = densityNative,
+                MaxDensity = maxDensity
             };
 
             await job.Schedule();
 
+            var maxDensityValue = maxDensity.Value;
+
             particleNative.Dispose();
+            maxDensity.Dispose();
+
+            return maxDensityValue;
         }
 
         /// <summary>
@@ -107,6 +117,7 @@ namespace Features.Clay.Scripts
             [Unity.Collections.ReadOnly] public float KernelRadius;
 
             public NativeArray<float> DensityGrid;
+            public NativeReference<float> MaxDensity;
 
             #endregion
 
@@ -126,8 +137,6 @@ namespace Features.Clay.Scripts
 
                 var h = KernelRadius;
                 var h2 = h * h;
-                var mp = 4f / 3f * math.PI * math.pow(KernelRadius * GridRes.x, 3f);
-                var invMp = 1f / mp;
 
                 foreach (var pos in Positions)
                 {
@@ -155,15 +164,14 @@ namespace Features.Clay.Scripts
                         // poly6 カーネル: (1 - r²/h²)³
                         var q = 1f - r2 / h2;
 
-                        DensityGrid[xi + yi * nx + zi * nx * ny] += q * q * q * invMp;
+                        DensityGrid[xi + yi * nx + zi * nx * ny] += q * q * q;
                     }
                 }
 
-                var maxF = 0f;
+                MaxDensity.Value = 0f;
                 foreach (var f in DensityGrid)
-                    if (f > maxF)
-                        maxF = f;
-                Debug.Log($"[ClayToMesh] Density field max value: {maxF}");
+                    if (f > MaxDensity.Value)
+                        MaxDensity.Value = f;
             }
         }
 
@@ -202,7 +210,7 @@ namespace Features.Clay.Scripts
             _compute.SetInt(Uniforms.n_grid, gridRes);
             _compute.SetInt(Uniforms.max_triangle, triangleBudget);
             _compute.SetFloat(Uniforms.scale, mcScale);
-            _compute.SetFloat(Uniforms.iso_value, isoValue);
+            _compute.SetFloat(Uniforms.iso_value, _isoValue);
 
             _compute.SetBuffer(Kernels.mesh_reconstruction, Uniforms.triangle_table, _triangleTable);
             _compute.SetBuffer(Kernels.mesh_reconstruction, Uniforms.voxels, _mcGridBuf);
