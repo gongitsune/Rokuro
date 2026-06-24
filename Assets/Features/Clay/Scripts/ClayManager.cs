@@ -25,7 +25,7 @@ namespace Features.Clay.Scripts
             _particleRenderer = new ClayParticleRenderer(particleRendererDesc, _compute, transform);
             _gridVelRenderer = new ClayGridVelRenderer(gridVelRendererDesc, _compute);
             _clayForce = new ClayForce(clayForceDesc, transform, rendererDesc.renderFeature);
-            _ = new ClayRenderer(rendererDesc, _compute, transform);
+            _ = new ClayRenderer(rendererDesc, _compute);
 
             _compute.Reset();
         }
@@ -37,7 +37,7 @@ namespace Features.Clay.Scripts
             _compute.SetObjectForces(_clayForce.GetActiveForces(), _clayForce.GetActiveForceCount());
             _compute.Tick();
 
-            rendererDesc.renderFeature.RotateClay(rotateSpeed * Time.deltaTime);
+            rendererDesc.renderFeature.RotateClay(rotateSpeed * Time.deltaTime, transform);
 
             if (debugDraw)
                 _gridVelRenderer.Draw();
