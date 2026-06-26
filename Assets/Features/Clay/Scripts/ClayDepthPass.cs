@@ -31,7 +31,6 @@ namespace Features.Clay.Scripts
             var resourceData = frameData.Get<UniversalResourceData>();
 
             var depthDesc = renderGraph.GetTextureDesc(resourceData.activeDepthTexture);
-            depthDesc.msaaSamples = MSAASamples.None;
             depthDesc.clearBuffer = true;
 
             var depthTempRTs = new TextureHandle[2];
