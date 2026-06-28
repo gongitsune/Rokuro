@@ -27,23 +27,26 @@ MonoBehaviour:
   m_Name: ClayRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.ClayRenderFeature
   m_Active: 1
-  radius: 0.04
-  maxFilterSize: 32
   clayColor: {r: 0.8, g: 0.4, b: 0.3, a: 1}
   clayMainTex: {fileID: 2800000, guid: 252ffded71a92432294738916dbc97ca, type: 3}
   clayNormalTex: {fileID: 2800000, guid: f769340f4babb461eb81c454253616f2, type: 3}
+  maxFilterSize: 16
+  filterDelta: 0.3
+  filterMu: 0.03
+  filterSigma: 0.021
+  gtaoRadius: 0.083333336
+  gtaoIntensity: 0.8
+  gtaoSliceCount: 4
+  gtaoStepCount: 8
+  gtaoThickness: 0.020833334
+  normalStrength: 0.35
+  normalMapTex: {fileID: 2800000, guid: f769340f4babb461eb81c454253616f2, type: 3}
+  normalTiling: 1
+  radius: 0.03
   shadowStepSize: 0.01
   shadowBias: 0.01
   shadowIntensity: 0.5
   shadowStepCount: 16
-  gtaoRadius: 0.083333336
-  gtaoSliceCount: 4
-  gtaoStepCount: 8
-  gtaoIntensity: 0.8
-  gtaoThickness: 0.020833334
-  normalStrength: 0.35
-  normalTiling: 1
-  normalMapTex: {fileID: 2800000, guid: f769340f4babb461eb81c454253616f2, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

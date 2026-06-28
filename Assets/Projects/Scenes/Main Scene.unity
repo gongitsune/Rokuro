@@ -1605,9 +1605,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8731860101644454912, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 528776047}
-    - targetCorrespondingSourceObject: {fileID: -5444756629341513694, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2104413286}
     - targetCorrespondingSourceObject: {fileID: -5711052370896006010, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1923146057}
@@ -3228,8 +3225,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 12.489859, y: 12.489857, z: 0.19643694}
-  m_Center: {x: 0, y: 0, z: 0.09821847}
+  m_Size: {x: 12.489859, y: 14.172427, z: 0.19643694}
+  m_Center: {x: 0, y: -0.8412891, z: 0.09821931}
 --- !u!4 &1949461074 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -797920208486026627, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
@@ -3666,33 +3663,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6018838917197495621, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
   m_PrefabInstance: {fileID: 2001785476}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2104413282 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -5444756629341513694, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
-  m_PrefabInstance: {fileID: 591351554}
-  m_PrefabAsset: {fileID: 0}
---- !u!64 &2104413286
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2104413282}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -3705340239497901148, guid: 2281da7e5d4d8fa44893b116e15ba61c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

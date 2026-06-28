@@ -11,8 +11,8 @@ namespace Projects.Scripts.sit
         [SerializeField] private DynamicMoveProvider moveProvider;
         [SerializeField] private GravityProvider gravityProvider;
         [SerializeField] private SnapTurnProvider snapTurnProvider;
-        private int _collision;
 
+        private int _collision;
         private XRBodyTransformer _transformer;
 
         private void Start()

@@ -124,7 +124,7 @@ void mesh_reconstruction(uint3 id : SV_DispatchThreadID)
     // (initialized as a bit field of vertex binary states)
     uint selector = 0;
     for (i = 0; i < 8; i++)
-        selector |= (samples[i].w < iso_value) << i;
+        selector |= (samples[i].w > iso_value) << i;
 
     // Special case for empty cubes; Exit ealy if there is no intersection.
     if (selector == 0 || selector == 0xff) return;
@@ -162,7 +162,8 @@ void mesh_reconstruction(uint3 id : SV_DispatchThreadID)
         write_vertex(vidx + 0, vertices[e1], normals[e1]);
         write_vertex(vidx + 1, vertices[e2], normals[e2]);
         write_vertex(vidx + 2, vertices[e3], normals[e3]);
-        write_indices(vidx, uint3(vidx, vidx + 1, vidx + 2));
+        // write_indices(vidx, uint3(vidx, vidx + 1, vidx + 2));
+        write_indices(vidx, uint3(vidx + 2, vidx + 1, vidx));
     }
 }
 

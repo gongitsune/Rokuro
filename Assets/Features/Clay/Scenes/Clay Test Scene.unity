@@ -494,7 +494,7 @@ MonoBehaviour:
     nu: 0.4
     gravity:
       x: 0
-      y: -5.37
+      y: -2
       z: 0
     cylinderRadius: 0.25
     cylinderHeight: 0.5
@@ -532,10 +532,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Features.Clay.Scripts.SdfConstructor
   gridRes: 128
-  kernelRadius: 4
+  kernelRadius: 2
   triangleBudget: 131072
   blurIterations: 2
-  isoValueScale: 1
+  isoValueScale: 5
   mcScale: 0.020833334
   computeShader: {fileID: 7200000, guid: 6208dfe31a1d47829788466db7963ff7, type: 3}
 --- !u!1 &287357689

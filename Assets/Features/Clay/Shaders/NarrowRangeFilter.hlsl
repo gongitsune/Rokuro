@@ -5,9 +5,9 @@
 float compute_sigma_screen(float eye_depth)
 {
     float h = _BlitTexture_TexelSize.w; // 縦解像度
-    float tan_half_fov = tan(UNITY_MATRIX_P[1][1] > 0
-                                 ? atan(1.0 / UNITY_MATRIX_P[1][1])
-                                 : radians(30.0));
+    float tan_half_fov = UNITY_MATRIX_P[1][1] > 0
+                             ? 1.0 / UNITY_MATRIX_P[1][1]
+                             : 0.577350; // tan(radians(60) / 2)
     return h * sigma_world / (2.0 * abs(eye_depth) * tan_half_fov);
 }
 
@@ -78,9 +78,15 @@ float narrow_range_filter_1d(float2 uv, float2 dir)
         // Dynamic Range Adjustment（式8,9）
         // 範囲内なら閾値を拡張
         if (zj >= zi - delta_low && zj <= zi + delta_high)
+        {
             delta_low = max(delta_low, zi - zj + delta);
-        if (zk >= zi - delta_low && zk <= zi + delta_high)
             delta_high = max(delta_high, zk - zi + delta);
+        }
+        if (zk >= zi - delta_low && zk <= zi + delta_high)
+        {
+            delta_low = max(delta_low, zi - zj + delta);
+            delta_high = max(delta_high, zk - zi + delta);
+        }
     }
 
     // 中心ピクセルの寄与

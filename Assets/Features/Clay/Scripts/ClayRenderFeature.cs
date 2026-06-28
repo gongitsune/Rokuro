@@ -44,13 +44,28 @@ namespace Features.Clay.Scripts
             gtao_thickness_ws
         }
 
-        [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
-
-        [Title("Bilateral")] [SerializeField] private int maxFilterSize = 100;
-
         [Title("Shading")] [SerializeField] private Color clayColor = new(0.8f, 0.4f, 0.3f);
         [SerializeField] private Texture2D clayMainTex;
         [SerializeField] private Texture2D clayNormalTex;
+
+        [Title("Narrow Range Filter")] [SerializeField]
+        private int maxFilterSize = 100;
+
+        [SerializeField] private float filterDelta = 0.5f;
+        [SerializeField] private float filterMu = 0.5f;
+        [SerializeField] private float filterSigma = 0.5f;
+
+        [Title("GTAO")] [SerializeField] private float gtaoRadius = 0.05f;
+        [SerializeField] private float gtaoIntensity = 1.0f;
+        [SerializeField] private int gtaoSliceCount = 4;
+        [SerializeField] private int gtaoStepCount = 8;
+        [SerializeField] private float gtaoThickness = 0.1f;
+
+        [Title("Normal Map")] [SerializeField] private float normalStrength = 0.5f;
+        [SerializeField] private Texture2D normalMapTex;
+        [SerializeField] private float normalTiling = 1.0f;
+
+        [Title("Clay Depth")] [SerializeField] private float radius = 0.05f;
 
         [Title("Screen Space Shadow")] [SerializeField]
         private float shadowStepSize = 0.02f;
@@ -58,16 +73,6 @@ namespace Features.Clay.Scripts
         [SerializeField] private float shadowBias = 0.01f;
         [SerializeField] private float shadowIntensity = 0.5f;
         [SerializeField] private int shadowStepCount = 16;
-
-        [Title("GTAO")] [SerializeField] private float gtaoRadius = 0.05f;
-        [SerializeField] private int gtaoSliceCount = 4;
-        [SerializeField] private int gtaoStepCount = 8;
-        [SerializeField] private float gtaoIntensity = 1.0f;
-        [SerializeField] private float gtaoThickness = 0.1f;
-
-        [Title("Normal Map")] [SerializeField] private float normalStrength = 0.5f;
-        [SerializeField] private float normalTiling = 1.0f;
-        [SerializeField] private Texture2D normalMapTex;
 
         private ClayDepthPass _clayDepthPass;
         private MaterialWrapper<Uniforms> _mat;
@@ -104,9 +109,9 @@ namespace Features.Clay.Scripts
             _mat.SetTexture(Uniforms.normal_map, normalMapTex);
 
             _mat.SetFloat(Uniforms.radius, radius);
-            _mat.SetFloat(Uniforms.delta, radius * 10f);
-            _mat.SetFloat(Uniforms.mu, radius);
-            _mat.SetFloat(Uniforms.sigma_world, radius * 0.7f);
+            _mat.SetFloat(Uniforms.delta, filterDelta);
+            _mat.SetFloat(Uniforms.mu, filterMu);
+            _mat.SetFloat(Uniforms.sigma_world, filterSigma);
             _mat.SetFloat(Uniforms.max_filter_radius, maxFilterSize);
             _mat.SetFloat(Uniforms.shadow_step_size, shadowStepSize);
             _mat.SetFloat(Uniforms.shadow_bias, shadowBias);

@@ -52,7 +52,7 @@ namespace Features.Clay.Scripts
                 new NativeArray<float>(total, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             var maxDensity = await CalcDensityField(positionsBuffer, densityNative);
             _isoValue = maxDensity * isoValueScale;
-            Log("Calculated density field.");
+            Log($"Calculated density field. {maxDensity}");
 
             AllocateBuffers(in densityNative);
             densityNative.Dispose();
